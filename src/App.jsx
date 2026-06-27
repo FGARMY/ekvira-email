@@ -397,17 +397,47 @@ function TemplatesTab() {
 // ─── Auto-reply Tab ────────────────────────────────────────────────────────────
 
 function AutoReplyTab() {
-  const [rules, setRules] = useState(AUTO_RULES_DEFAULT);
+  // Load rules from localStorage or default
+  const getInitialRules = () => {
+    const saved = localStorage.getItem('ekvira-autoreply-rules');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 1, title: "General Inquiry", desc: "If it's a general inquiry, reply thanking them and stating that the team will contact them in a few hours.", enabled: true },
+      { id: 2, title: "Payment Received", desc: "If they mention a payment, thank them for the payment and state the accounting team will verify it shortly.", enabled: false }
+    ];
+  };
+
+  const [rules, setRules] = useState(getInitialRules);
   const [inboxLogs, setInboxLogs] = useState(null);
   const [isChecking, setIsChecking] = useState(false);
 
+  // Save rules to localStorage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('ekvira-autoreply-rules', JSON.stringify(rules));
+  }, [rules]);
+
   const toggle = (id) => setRules(r => r.map(rule => rule.id === id ? { ...rule, enabled: !rule.enabled } : rule));
+  
+  const updateRuleDesc = (id, newDesc) => {
+    setRules(r => r.map(rule => rule.id === id ? { ...rule, desc: newDesc } : rule));
+  };
+  
+  const updateRuleTitle = (id, newTitle) => {
+    setRules(r => r.map(rule => rule.id === id ? { ...rule, title: newTitle } : rule));
+  };
 
   const checkInbox = async () => {
     setIsChecking(true);
     setInboxLogs(null);
     try {
-      const res = await fetch("/api/check-emails");
+      // Gather only enabled rules to send to AI
+      const enabledRules = rules.filter(r => r.enabled).map(r => r.desc);
+      
+      const res = await fetch("/api/check-emails", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rules: enabledRules })
+      });
       const data = await res.json();
       
       if (data.error) {
@@ -427,14 +457,30 @@ function AutoReplyTab() {
 
   return (
     <div>
-      <div style={labelStyle}>Auto-reply rules</div>
+      <div style={labelStyle}>Auto-reply rules (AI Instructions)</div>
+      <div style={{ fontSize: 12, color: "#4B5563", marginBottom: 8 }}>
+        Grok AI will read these enabled rules and apply them automatically to incoming emails.
+      </div>
       <div style={{ border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden", marginTop: 8 }}>
         {rules.map((rule, i) => (
-          <div key={rule.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < rules.length - 1 ? "1px solid #F3F4F6" : "none" }}>
-            <Toggle checked={rule.enabled} onChange={() => toggle(rule.id)} />
+          <div key={rule.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: i < rules.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+            <div style={{ marginTop: 2 }}>
+              <Toggle checked={rule.enabled} onChange={() => toggle(rule.id)} />
+            </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{rule.title}</div>
-              <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{rule.desc}</div>
+              <input 
+                type="text" 
+                value={rule.title} 
+                onChange={(e) => updateRuleTitle(rule.id, e.target.value)}
+                style={{ fontSize: 13, fontWeight: 500, color: "#111827", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0, margin: 0 }} 
+                placeholder="Rule Title"
+              />
+              <textarea 
+                value={rule.desc}
+                onChange={(e) => updateRuleDesc(rule.id, e.target.value)}
+                style={{ fontSize: 12, color: "#4B5563", marginTop: 4, width: "100%", border: "1px dashed #D1D5DB", borderRadius: 4, padding: "4px 6px", outline: "none", resize: "vertical", minHeight: 40 }}
+                placeholder="Instruct the AI exactly how to respond..."
+              />
             </div>
             <Badge status={rule.enabled ? "active" : "off"} />
           </div>
@@ -442,22 +488,22 @@ function AutoReplyTab() {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New rule", desc: "Click to configure", enabled: false }])} style={btnStyle}>
+        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New automation", desc: "If the email mentions X, reply with Y.", enabled: true }])} style={btnStyle}>
           + Add rule
         </button>
       </div>
 
       <div style={{ marginTop: 18, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "12px 14px" }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", marginBottom: 4 }}>💡 How auto-replies work</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", marginBottom: 4 }}>💡 Triggering Auto-Replies</div>
         <div style={{ fontSize: 12, color: "#1E3A8A", lineHeight: 1.6 }}>
-          Active rules trigger automatically when matching emails arrive in your Gmail inbox. Connect Gmail via OAuth to enable live auto-replies.
+          Click the button below to check your inbox. The backend will read your unread emails and apply your enabled AI rules!
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
           <button style={{ ...primaryBtn, fontSize: 12, padding: "6px 12px" }} onClick={() => window.location.href = "/api/auth/google"}>
             Connect Gmail (OAuth) ↗
           </button>
           <button style={{ ...successBtn, fontSize: 12, padding: "6px 12px", opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
-            {isChecking ? "⏳ Checking..." : "🔄 Check Inbox Now"}
+            {isChecking ? "⏳ Checking & Replying..." : "🔄 Check Inbox Now"}
           </button>
         </div>
 

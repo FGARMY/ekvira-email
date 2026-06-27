@@ -22,6 +22,24 @@ export default async function handler(req, res) {
     oauth2Client.setCredentials({ refresh_token: refreshToken });
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    
+    // Parse rules from request body if POST, otherwise use default
+    let customRules = [];
+    if (req.method === 'POST') {
+      try {
+        const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        if (body && body.rules && Array.isArray(body.rules)) {
+          customRules = body.rules;
+        }
+      } catch (e) {
+        console.error('Error parsing rules body', e);
+      }
+    }
+    
+    const defaultRule = "Rule 1: For all general inquiries, reply politely thanking them and stating that the EkviraExportHouse team will contact them in a few hours.";
+    const activeRulesText = customRules.length > 0 
+      ? customRules.map((r, i) => `Rule ${i+1}: ${r}`).join('\n') 
+      : defaultRule;
 
     // 1. Fetch unread messages
     const listRes = await gmail.users.messages.list({
@@ -95,12 +113,16 @@ export default async function handler(req, res) {
       });
 
       // 4. Generate AI Reply using Grok
-      const prompt = `You are the AI assistant for EkviraExportHouse, an Indian export trading company. 
+      const prompt = `You are the AI auto-reply assistant for EkviraExportHouse, an Indian export trading company. 
 We received an email from: ${sender}
 Subject: ${subject}
 Message: ${bodyText}
 
-Please write a polite and professional response email. Return ONLY the body of the email. Do not include the subject line or any commentary.`;
+Please read the email and apply the most relevant rule from this list:
+${activeRulesText}
+
+If none of the specific rules apply, just write a standard polite acknowledgment stating the team will get back to them.
+Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.`;
 
       const aiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
