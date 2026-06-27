@@ -658,8 +658,12 @@ Write ONLY the body of the response email. Do not include the subject line or an
               <div style={{ fontSize: 13, color: "#64748B" }}>{email.bodySnippet}...</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
-              <button onClick={() => startManualReply(email)} style={btnStyle}>💬 Manual Reply</button>
+              {folder === 'inbox' && (
+                <>
+                  <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
+                  <button onClick={() => startManualReply(email)} style={btnStyle}>💬 Manual Reply</button>
+                </>
+              )}
             </div>
           </div>
         ))}
