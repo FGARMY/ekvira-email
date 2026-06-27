@@ -132,6 +132,22 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
   const [saved, setSaved]           = useState(false);
   const [sending, setSending]       = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachments(prev => [...prev, { name: file.name, mimeType: file.type, base64: reader.result }]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   const parseEmail = (text) => {
     const lines = text.split("\n");
@@ -191,7 +207,7 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
       const res = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: clientEmail, subject: finalSubject, body: finalBody }),
+        body: JSON.stringify({ to: clientEmail, subject: finalSubject, body: finalBody, attachments }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -286,6 +302,21 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
               ? <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={12} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
               : <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "16px 20px", fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#334155", fontFamily: "inherit" }}>{parseEmail(result).body}</div>
             }
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>Attachments (Optional)</label>
+            <input type="file" multiple onChange={handleFileChange} style={{ marginBottom: 12, display: "block" }} />
+            {attachments.length > 0 && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {attachments.map((att, i) => (
+                  <div key={i} style={{ background: "#E2E8F0", padding: "6px 12px", borderRadius: 16, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+                    📎 {att.name}
+                    <button onClick={() => removeAttachment(i)} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", padding: 0 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ height: 1, background: "#E2E8F0", margin: "24px 0" }} />
@@ -516,6 +547,10 @@ function InboxTab() {
   const [draft, setDraft] = useState("");
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
+  
+  const [summaries, setSummaries] = useState({});
+  const [summarizing, setSummarizing] = useState({});
+  const [language, setLanguage] = useState("None");
 
   const fetchInbox = async () => {
     setLoading(true); setError(null); setSelectedEmail(null);
@@ -532,6 +567,28 @@ function InboxTab() {
 
   useEffect(() => { fetchInbox(); }, [folder]);
 
+  const summarizeEmail = async (email) => {
+    setSummarizing(prev => ({ ...prev, [email.id]: true }));
+    try {
+      const prompt = `Summarize the following email in 2 sentences, followed by a bulleted list of Action Items if any exist. Do not include any other text.\n\nFrom: ${email.sender}\nSubject: ${email.subject}\n\nBody: ${email.bodyFull}`;
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (res.ok && data.candidates && data.candidates[0].content.parts[0]) {
+        setSummaries(prev => ({ ...prev, [email.id]: data.candidates[0].content.parts[0].text }));
+      } else {
+        alert("Failed to summarize.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error summarizing: " + err.message);
+    }
+    setSummarizing(prev => ({ ...prev, [email.id]: false }));
+  };
+
   const generateReply = async (email) => {
     setSelectedEmail(email); setGenerating(true); setDraft("");
     try {
@@ -546,7 +603,8 @@ Please read the email and apply the most relevant rule from this list:
 ${activeRulesText || "Rule 1: For all general inquiries, reply politely thanking them and stating that the team will contact them in a few hours."}
 
 If none of the specific rules apply, just write a standard polite acknowledgment stating the team will get back to them.
-Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.`;
+Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.
+${language !== 'None' ? `\nCRITICAL INSTRUCTION: You MUST translate the entire response into ${language} before returning it.` : ''}`;
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -640,7 +698,23 @@ Write ONLY the body of the response email. Do not include the subject line or an
             📤 Sent Emails
           </button>
         </div>
-        <button onClick={fetchInbox} style={btnStyle} disabled={loading}>{loading ? "⏳ Loading..." : "🔄 Refresh"}</button>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          {folder === 'inbox' && (
+            <>
+              <label style={{ fontSize: 13, color: "#64748B" }}>AI Translation:</label>
+              <select value={language} onChange={e => setLanguage(e.target.value)} style={{ ...inputStyle, padding: "8px 12px", width: 120, minHeight: "auto", margin: 0 }}>
+                <option value="None">None</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Mandarin">Mandarin</option>
+                <option value="Japanese">Japanese</option>
+              </select>
+            </>
+          )}
+          <button onClick={fetchInbox} style={btnStyle} disabled={loading}>{loading ? "⏳ Loading..." : "🔄 Refresh"}</button>
+        </div>
       </div>
       
       {error && <div style={{ color: "#DC2626", marginBottom: 16 }}>Error: {error}</div>}
@@ -655,11 +729,22 @@ Write ONLY the body of the response email. Do not include the subject line or an
             <div style={{ flex: 1, paddingRight: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{email.sender}</div>
               <div style={{ fontSize: 14, fontWeight: 500, color: "#1E293B", marginBottom: 8 }}>{email.subject}</div>
+              
+              {summaries[email.id] && (
+                <div style={{ padding: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 6, marginBottom: 12, fontSize: 14, color: "#1E3A8A", whiteSpace: "pre-wrap" }}>
+                  <strong style={{ display: "block", marginBottom: 6 }}>🧠 AI Summary & Actions:</strong>
+                  {summaries[email.id]}
+                </div>
+              )}
+              
               <div style={{ fontSize: 13, color: "#64748B" }}>{email.bodySnippet}...</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {folder === 'inbox' && (
                 <>
+                  <button onClick={() => summarizeEmail(email)} style={{ ...btnStyle, background: "#F1F5F9", borderColor: "#CBD5E1" }} disabled={summarizing[email.id]}>
+                    {summarizing[email.id] ? "⏳ Summarizing..." : "🧠 Summarize"}
+                  </button>
                   <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
                   <button onClick={() => startManualReply(email)} style={btnStyle}>💬 Manual Reply</button>
                 </>
@@ -680,8 +765,24 @@ function BulkSendTab() {
   const [body, setBody] = useState("");
   const [sendingState, setSendingState] = useState({ total: 0, sent: 0, failed: 0, status: 'idle', currentIdx: 0 });
   const [logs, setLogs] = useState([]);
+  const [attachments, setAttachments] = useState([]);
 
   const [speed, setSpeed] = useState("fast");
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachments(prev => [...prev, { name: file.name, mimeType: file.type, base64: reader.result }]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   const parseRecipients = (text) => {
     // Basic CSV or comma/semicolon separated parser
@@ -698,6 +799,22 @@ function BulkSendTab() {
       }
     }
     return parsed;
+  };
+
+  const loadContactsByTag = () => {
+    const crm = JSON.parse(localStorage.getItem('ekvira-contacts') || '[]');
+    if (crm.length === 0) return alert("You have no contacts saved in the Contacts Tab!");
+    
+    const tag = prompt("Enter a tag to filter by (leave blank to load ALL contacts):");
+    let filtered = crm;
+    if (tag) {
+      filtered = crm.filter(c => c.tags.some(t => t.toLowerCase() === tag.trim().toLowerCase()));
+    }
+    
+    if (filtered.length === 0) return alert("No contacts found with that tag.");
+    
+    const formatted = filtered.map(c => c.name ? `${c.name} <${c.email}>` : c.email).join(',\n');
+    setRecipientList(prev => prev ? prev + ',\n' + formatted : formatted);
   };
 
   const startBulkSend = async () => {
@@ -729,7 +846,8 @@ function BulkSendTab() {
           body: JSON.stringify({
             to: contact.name ? `${contact.name} <${contact.email}>` : contact.email,
             subject: personalizedSubject,
-            body: personalizedBody
+            body: personalizedBody,
+            attachments
           })
         });
         
@@ -781,7 +899,10 @@ function BulkSendTab() {
 
       <div style={{ opacity: sendingState.status === 'sending' ? 0.5 : 1, pointerEvents: sendingState.status === 'sending' ? 'none' : 'auto' }}>
         <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Recipient List (Comma or Line separated)</label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <label style={labelStyle}>Recipient List (Comma or Line separated)</label>
+            <button onClick={loadContactsByTag} style={{ ...btnStyle, padding: "4px 10px", fontSize: 13, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>👥 Load from Contacts</button>
+          </div>
           <textarea 
             value={recipientList} 
             onChange={e => setRecipientList(e.target.value)}
@@ -813,6 +934,21 @@ function BulkSendTab() {
           />
         </div>
 
+        <div style={{ marginBottom: 24 }}>
+          <label style={labelStyle}>Attachments (Optional)</label>
+          <input type="file" multiple onChange={handleFileChange} style={{ marginBottom: 12, display: "block" }} />
+          {attachments.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {attachments.map((att, i) => (
+                <div key={i} style={{ background: "#E2E8F0", padding: "6px 12px", borderRadius: 16, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+                  📎 {att.name}
+                  <button onClick={() => removeAttachment(i)} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", padding: 0 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Sending Speed</label>
@@ -831,6 +967,82 @@ function BulkSendTab() {
         <button onClick={startBulkSend} style={{ ...primaryBtn, width: "100%", padding: "14px 24px", fontSize: 16 }}>
           🚀 Send All ({parseRecipients(recipientList).length} Emails)
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Contacts Tab ─────────────────────────────────────────────────────────────
+
+function ContactsTab() {
+  const [contacts, setContacts] = useState(() => JSON.parse(localStorage.getItem('ekvira-contacts') || '[]'));
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [tags, setTags] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem('ekvira-contacts', JSON.stringify(contacts));
+  }, [contacts]);
+
+  const addContact = () => {
+    if (!email) return alert("Email is required!");
+    const newContact = {
+      id: Date.now(),
+      name, email, company,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean)
+    };
+    setContacts([...contacts, newContact]);
+    setName(""); setEmail(""); setCompany(""); setTags("");
+  };
+
+  const deleteContact = (id) => {
+    setContacts(contacts.filter(c => c.id !== id));
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Contacts Database</h2>
+      <p style={{ fontSize: 14, color: "#64748B", marginBottom: 24 }}>Manage your clients here. You can use Tags (e.g. VIP, Supplier) to filter them later for Bulk Sending.</p>
+      
+      <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div>
+            <label style={labelStyle}>Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} style={inputStyle} placeholder="John Doe" />
+          </div>
+          <div>
+            <label style={labelStyle}>Email *</label>
+            <input value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} placeholder="john@example.com" />
+          </div>
+          <div>
+            <label style={labelStyle}>Company</label>
+            <input value={company} onChange={e => setCompany(e.target.value)} style={inputStyle} placeholder="Acme Corp" />
+          </div>
+          <div>
+            <label style={labelStyle}>Tags (Comma separated)</label>
+            <input value={tags} onChange={e => setTags(e.target.value)} style={inputStyle} placeholder="VIP, Lead" />
+          </div>
+        </div>
+        <button onClick={addContact} style={primaryBtn}>+ Add Contact</button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {contacts.map(c => (
+          <div key={c.id} style={{ border: "1px solid #E2E8F0", borderRadius: 8, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <strong style={{ color: "#0F172A", display: "block" }}>{c.name || "No Name"} &lt;{c.email}&gt;</strong>
+              {c.company && <div style={{ fontSize: 13, color: "#475569", marginTop: 4 }}>Company: {c.company}</div>}
+              {c.tags.length > 0 && (
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  {c.tags.map(t => <span key={t} style={{ background: "#DBEAFE", color: "#1D4ED8", padding: "2px 8px", borderRadius: 12, fontSize: 12 }}>{t}</span>)}
+                </div>
+              )}
+            </div>
+            <button onClick={() => deleteContact(c.id)} style={{ background: "transparent", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 20 }}>×</button>
+          </div>
+        ))}
+        {contacts.length === 0 && <div style={{ textAlign: "center", color: "#64748B", padding: 24 }}>No contacts added yet.</div>}
       </div>
     </div>
   );
@@ -903,6 +1115,7 @@ const TABS = [
   { id: "compose",   label: "AI Compose", icon: "✨" },
   { id: "inbox",     label: "Inbox Review", icon: "📥" },
   { id: "bulk",      label: "Bulk Send",  icon: "📢" },
+  { id: "contacts",  label: "Contacts",   icon: "👥" },
   { id: "templates", label: "Templates",  icon: "📄" },
   { id: "auto",      label: "Auto-reply", icon: "🔁" },
   { id: "schedule",  label: "Scheduled",  icon: "📅" },
@@ -977,6 +1190,7 @@ export default function App() {
             {tab === "compose"   && <ComposeTab emailsSent={emailsSent} setEmailsSent={setEmailsSent} />}
             {tab === "inbox"     && <InboxTab />}
             {tab === "bulk"      && <BulkSendTab />}
+            {tab === "contacts"  && <ContactsTab />}
             {tab === "templates" && <TemplatesTab />}
             {tab === "auto"      && <AutoReplyTab />}
             {tab === "schedule"  && <ScheduledTab />}

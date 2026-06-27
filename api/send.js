@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { to, subject, body } = req.body;
+  const { to, subject, body, attachments } = req.body;
 
   if (!to || !subject || !body) {
     return res.status(400).json({ error: 'Missing required fields: to, subject, body' });
@@ -32,9 +32,34 @@ export default async function handler(req, res) {
     const emailLines = [];
     emailLines.push(`To: ${to}`);
     emailLines.push(`Subject: ${subject}`);
-    emailLines.push('Content-Type: text/plain; charset="UTF-8"');
-    emailLines.push('');
-    emailLines.push(body);
+    emailLines.push('MIME-Version: 1.0');
+
+    if (attachments && attachments.length > 0) {
+      const boundary = 'foo_bar_baz_boundary';
+      emailLines.push(`Content-Type: multipart/mixed; boundary=${boundary}`);
+      emailLines.push('');
+      emailLines.push(`--${boundary}`);
+      emailLines.push('Content-Type: text/plain; charset="UTF-8"');
+      emailLines.push('');
+      emailLines.push(body);
+      emailLines.push('');
+      
+      for (const att of attachments) {
+        emailLines.push(`--${boundary}`);
+        emailLines.push(`Content-Type: ${att.mimeType || 'application/octet-stream'}; name="${att.name}"`);
+        emailLines.push(`Content-Disposition: attachment; filename="${att.name}"`);
+        emailLines.push('Content-Transfer-Encoding: base64');
+        emailLines.push('');
+        const b64Data = att.base64.replace(/^data:.*,/, '');
+        emailLines.push(b64Data);
+        emailLines.push('');
+      }
+      emailLines.push(`--${boundary}--`);
+    } else {
+      emailLines.push('Content-Type: text/plain; charset="UTF-8"');
+      emailLines.push('');
+      emailLines.push(body);
+    }
 
     const rawEmail = Buffer.from(emailLines.join('\n')).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
