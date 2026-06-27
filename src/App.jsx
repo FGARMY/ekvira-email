@@ -620,14 +620,14 @@ Write ONLY the body of the response email. Do not include the subject line or an
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Unread Inbox</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Inbox</h2>
         <button onClick={fetchInbox} style={btnStyle} disabled={loading}>{loading ? "⏳ Loading..." : "🔄 Refresh"}</button>
       </div>
       
       {error && <div style={{ color: "#DC2626", marginBottom: 16 }}>Error: {error}</div>}
       
       {!loading && emails.length === 0 && (
-        <div style={{ color: "#64748B", textAlign: "center", padding: 32 }}>No unread emails found.</div>
+        <div style={{ color: "#64748B", textAlign: "center", padding: 32 }}>No emails found.</div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

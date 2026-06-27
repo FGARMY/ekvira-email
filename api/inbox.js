@@ -20,11 +20,10 @@ export default async function handler(req, res) {
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     
-    // 1. Fetch unread messages
+    // 1. Fetch recent messages
     const listRes = await gmail.users.messages.list({
       userId: 'me',
-      q: 'is:unread',
-      maxResults: 15 // Limit to 15 unread emails for review
+      maxResults: 25 // Fetch recent 25 emails for review
     });
 
     const messages = listRes.data.messages || [];
