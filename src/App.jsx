@@ -681,6 +681,8 @@ function BulkSendTab() {
   const [sendingState, setSendingState] = useState({ total: 0, sent: 0, failed: 0, status: 'idle', currentIdx: 0 });
   const [logs, setLogs] = useState([]);
 
+  const [speed, setSpeed] = useState("fast");
+
   const parseRecipients = (text) => {
     // Basic CSV or comma/semicolon separated parser
     const items = text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
@@ -704,10 +706,14 @@ function BulkSendTab() {
     if (parsed.length === 0) return alert("No valid emails found!");
     if (parsed.length > 500) return alert("Maximum 500 emails allowed at once to protect your Gmail account!");
     
-    if (!confirm(`Are you sure you want to send ${parsed.length} personalized emails?`)) return;
+    if (!confirm(`Are you sure you want to send ${parsed.length} personalized emails? Please DO NOT close this tab while sending.`)) return;
 
     setSendingState({ total: parsed.length, sent: 0, failed: 0, status: 'sending', currentIdx: 0 });
     setLogs([]);
+
+    let delayMs = 1000;
+    if (speed === 'safe') delayMs = 12000; // 10 emails per 2 mins (12s per email)
+    if (speed === 'drip') delayMs = 24000; // 5 emails per 2 mins (24s per email)
 
     for (let i = 0; i < parsed.length; i++) {
       const contact = parsed[i];
@@ -740,8 +746,10 @@ function BulkSendTab() {
         setSendingState(prev => ({ ...prev, failed: prev.failed + 1 }));
       }
       
-      // Delay to avoid hitting Gmail rate limits too aggressively
-      await new Promise(r => setTimeout(r, 800));
+      // Delay based on user selection to prevent spam flags
+      if (i < parsed.length - 1) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
     }
     setSendingState(prev => ({ ...prev, status: 'done' }));
   };
@@ -803,6 +811,21 @@ function BulkSendTab() {
             style={{ ...inputStyle, minHeight: 250, resize: "vertical" }}
             placeholder="Hello [Name],\n\nWe wanted to reach out regarding..."
           />
+        </div>
+
+        <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Sending Speed</label>
+            <select 
+              value={speed} 
+              onChange={e => setSpeed(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="fast">🏎️ Fast (1 email / second - for small lists)</option>
+              <option value="safe">🚶 Safe (10 emails / 2 mins - Recommended)</option>
+              <option value="drip">🐢 Drip (5 emails / 2 mins - Avoids spam filters)</option>
+            </select>
+          </div>
         </div>
 
         <button onClick={startBulkSend} style={{ ...primaryBtn, width: "100%", padding: "14px 24px", fontSize: 16 }}>
