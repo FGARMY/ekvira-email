@@ -242,9 +242,32 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Email Details</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
           
-          <div>
-            <label style={labelStyle}>Purpose</label>
-            <select value={purpose} onChange={e => setPurpose(e.target.value)} style={inputStyle}>{PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Purpose</label>
+              <select value={purpose} onChange={e => setPurpose(e.target.value)} style={inputStyle}>{PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select>
+            </div>
+            <div style={{ marginLeft: 16 }}>
+              <label style={labelStyle}>Or Load Template</label>
+              <select 
+                onChange={e => {
+                  const t = (JSON.parse(localStorage.getItem('ekvira-templates') || '{}'))[e.target.value];
+                  if (t) {
+                    setResult(`Subject: ${t.subject}\\n\\n${t.body}`);
+                    setEditSubject(t.subject);
+                    setEditBody(t.body);
+                    setIsEditing(true);
+                  }
+                  e.target.value = "";
+                }} 
+                style={{ ...inputStyle, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}
+              >
+                <option value="">-- Select Template --</option>
+                {Object.entries(JSON.parse(localStorage.getItem('ekvira-templates') || '{}')).map(([k, t]) => (
+                  <option key={k} value={k}>{t.icon} {t.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -1025,7 +1048,25 @@ function BulkSendTab() {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Subject</label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <label style={labelStyle}>Email Subject</label>
+            <select 
+              onChange={e => {
+                const t = (JSON.parse(localStorage.getItem('ekvira-templates') || '{}'))[e.target.value];
+                if (t) {
+                  setSubject(t.subject);
+                  setBody(t.body);
+                }
+                e.target.value = "";
+              }} 
+              style={{ padding: "4px 10px", fontSize: 13, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8", borderRadius: 6, outline: "none" }}
+            >
+              <option value="">📄 Load from Templates</option>
+              {Object.entries(JSON.parse(localStorage.getItem('ekvira-templates') || '{}')).map(([k, t]) => (
+                <option key={k} value={k}>{t.icon} {t.label}</option>
+              ))}
+            </select>
+          </div>
           <input 
             value={subject} 
             onChange={e => setSubject(e.target.value)}
