@@ -212,14 +212,22 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "grok-beta", messages: [{ role: "user", content: prompt }] }),
       });
+      
       const data = await res.json();
-      const text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
-      setResult(text);
-      const { subj, body } = parseEmail(text);
-      setEditSubject(subj); setEditBody(body);
-      setEmailsSent(n => n + 1);
-    } catch {
-      setResult("Could not generate email. Please check your connection and try again.");
+      
+      if (!res.ok) {
+        setResult(`Error: ${data.error || 'Failed to generate email'}`);
+      } else if (data.choices && data.choices[0] && data.choices[0].message) {
+        const text = data.choices[0].message.content;
+        setResult(text);
+        const { subj, body } = parseEmail(text);
+        setEditSubject(subj); setEditBody(body);
+        setEmailsSent(n => n + 1);
+      } else {
+        setResult("Error: Grok returned unexpected data format.");
+      }
+    } catch (err) {
+      setResult(`Error: Could not generate email. (${err.message}). Are you running on Vercel?`);
     }
     setLoading(false);
   };
