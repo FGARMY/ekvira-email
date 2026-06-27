@@ -340,41 +340,85 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
 // ─── Templates Tab ─────────────────────────────────────────────────────────────
 
 function TemplatesTab() {
-  const [sel, setSel]             = useState("followup");
-  const [customName, setCustomName] = useState("");
-  const [customBody, setCustomBody] = useState("");
-  const [extras, setExtras]       = useState([]);
-  const [copied, setCopied]       = useState(false);
+  const [templates, setTemplates] = useState(() => {
+    const saved = localStorage.getItem('ekvira-templates');
+    return saved ? JSON.parse(saved) : { ...TEMPLATES };
+  });
 
-  const allTemplates = { ...TEMPLATES, ...Object.fromEntries(extras.map(e => [e.key, e])) };
-  const current = allTemplates[sel];
+  useEffect(() => {
+    localStorage.setItem('ekvira-templates', JSON.stringify(templates));
+  }, [templates]);
+
+  const [sel, setSel] = useState(Object.keys(templates)[0] || "");
+  const [copied, setCopied] = useState(false);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+
+  const current = templates[sel];
 
   const copy = () => {
-    navigator.clipboard.writeText(`Subject: ${current.subject}\n\n${current.body}`).catch(() => {});
+    if (!current) return;
+    navigator.clipboard.writeText(`Subject: ${current.subject}\\n\\n${current.body}`).catch(() => {});
     setCopied(true); setTimeout(() => setCopied(false), 1500);
   };
 
+  const startEdit = () => {
+    setEditName(current.label);
+    setEditSubject(current.subject);
+    setEditBody(current.body);
+    setIsEditing(true);
+  };
+
+  const saveEdit = () => {
+    setTemplates(prev => ({
+      ...prev,
+      [sel]: { ...prev[sel], label: editName, subject: editSubject, body: editBody }
+    }));
+    setIsEditing(false);
+  };
+
+  const deleteTemplate = () => {
+    if (!confirm("Are you sure you want to delete this template?")) return;
+    const newTemplates = { ...templates };
+    delete newTemplates[sel];
+    setTemplates(newTemplates);
+    setIsEditing(false);
+    setSel(Object.keys(newTemplates)[0] || "");
+  };
+
   const addCustom = () => {
-    if (!customName.trim() || !customBody.trim()) return;
     const key = "custom_" + Date.now();
-    setExtras(e => [...e, { key, label: customName, icon: "📝", subject: customName, body: customBody }]);
-    setCustomName(""); setCustomBody("");
+    setTemplates(prev => ({
+      ...prev,
+      [key]: { label: "New Template", icon: "📝", subject: "New Subject", body: "Template body..." }
+    }));
+    setSel(key);
+    setEditName("New Template");
+    setEditSubject("New Subject");
+    setEditBody("Template body...");
+    setIsEditing(true);
   };
 
   return (
     <div>
       <div style={cardStyle}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Quick-insert Templates</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Quick-insert Templates</h2>
+          <button onClick={addCustom} style={{ ...btnStyle, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>+ New Template</button>
+        </div>
         
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
-          {Object.entries(allTemplates).map(([k, t]) => (
-            <button key={k} onClick={() => setSel(k)} style={{ padding: "10px 16px", border: `1px solid ${sel === k ? "#3B82F6" : "#E2E8F0"}`, borderRadius: 10, background: sel === k ? "#EFF6FF" : "#F8FAFC", color: sel === k ? "#1D4ED8" : "#475569", fontSize: 14, fontWeight: sel === k ? 600 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
+          {Object.entries(templates).map(([k, t]) => (
+            <button key={k} onClick={() => { setSel(k); setIsEditing(false); }} style={{ padding: "10px 16px", border: `1px solid ${sel === k ? "#3B82F6" : "#E2E8F0"}`, borderRadius: 10, background: sel === k ? "#EFF6FF" : "#F8FAFC", color: sel === k ? "#1D4ED8" : "#475569", fontSize: 14, fontWeight: sel === k ? 600 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
               {t.icon} {t.label}
             </button>
           ))}
         </div>
 
-        {current && (
+        {current && !isEditing && (
           <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 24 }}>
             <div style={{ fontSize: 13, color: "#64748B", marginBottom: 12 }}>
               <strong style={{ color: "#0F172A", fontSize: 15 }}>Subject:</strong> <span style={{ fontSize: 15, color: "#1E293B" }}>{current.subject}</span>
@@ -383,27 +427,35 @@ function TemplatesTab() {
               {current.body}
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-              <button onClick={copy} style={primaryBtn}>{copied ? "✓ Copied to Clipboard!" : "📋 Copy Template"}</button>
+              <button onClick={copy} style={primaryBtn}>{copied ? "✓ Copied!" : "📋 Copy"}</button>
+              <button onClick={startEdit} style={btnStyle}>✏️ Edit</button>
+              <button onClick={deleteTemplate} style={{ ...btnStyle, color: "#EF4444" }}>🗑️ Delete</button>
             </div>
           </div>
         )}
-      </div>
 
-      <div style={cardStyle}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Create Custom Template</h2>
-        <div style={{ display: "grid", gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Template Name / Subject</label>
-            <input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Price Negotiation Follow-up" style={inputStyle} />
+        {current && isEditing && (
+          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 24 }}>
+            <div style={{ display: "grid", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Template Name (Button Label)</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Subject Line</label>
+                <input value={editSubject} onChange={e => setEditSubject(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Message Body</label>
+                <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={8} style={{ ...inputStyle, resize: "vertical" }} />
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <button onClick={saveEdit} style={primaryBtn}>✓ Save Changes</button>
+                <button onClick={() => setIsEditing(false)} style={btnStyle}>✕ Cancel</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label style={labelStyle}>Template Body</label>
-            <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} rows={6} placeholder="Template body — use [CLIENT], [DATE], [ORDER_NO] as placeholders" style={{ ...inputStyle, resize: "vertical" }} />
-          </div>
-          <div>
-            <button onClick={addCustom} style={btnStyle}>+ Save Template</button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
