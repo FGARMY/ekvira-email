@@ -425,11 +425,27 @@ function AutoReplyTab() {
       <div style={{ marginTop: 18, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "12px 14px" }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", marginBottom: 4 }}>💡 How auto-replies work</div>
         <div style={{ fontSize: 12, color: "#1E3A8A", lineHeight: 1.6 }}>
-          Active rules trigger automatically when matching emails arrive in your Gmail inbox. Connect Gmail below to enable live auto-replies.
+          Active rules trigger automatically when matching emails arrive in your Gmail inbox. Connect Gmail via OAuth to enable live auto-replies.
         </div>
-        <button style={{ ...primaryBtn, marginTop: 10, fontSize: 12, padding: "6px 12px" }} onClick={() => window.open("https://mail.google.com/", "_blank")}>
-          Connect Gmail ↗
-        </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <button style={{ ...primaryBtn, fontSize: 12, padding: "6px 12px" }} onClick={() => window.location.href = "/api/auth/google"}>
+            Connect Gmail (OAuth) ↗
+          </button>
+          <button style={{ ...successBtn, fontSize: 12, padding: "6px 12px" }} onClick={async () => {
+            const btn = document.getElementById("checkInboxBtn");
+            btn.innerText = "⏳ Checking...";
+            try {
+              const res = await fetch("/api/check-emails");
+              const data = await res.json();
+              alert(data.message || `Processed ${data.processed} emails.\nLogs:\n` + (data.logs || []).join('\n'));
+            } catch (err) {
+              alert("Error checking emails: " + err.message);
+            }
+            btn.innerText = "🔄 Check Inbox Now";
+          }} id="checkInboxBtn">
+            🔄 Check Inbox Now
+          </button>
+        </div>
       </div>
     </div>
   );
