@@ -672,6 +672,147 @@ Write ONLY the body of the response email. Do not include the subject line or an
   );
 }
 
+// ─── Bulk Send Tab ─────────────────────────────────────────────────────────────
+
+function BulkSendTab() {
+  const [recipientList, setRecipientList] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sendingState, setSendingState] = useState({ total: 0, sent: 0, failed: 0, status: 'idle', currentIdx: 0 });
+  const [logs, setLogs] = useState([]);
+
+  const parseRecipients = (text) => {
+    // Basic CSV or comma/semicolon separated parser
+    const items = text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+    const parsed = [];
+    for (const item of items) {
+      const match = item.match(/(?:(.*)\s+)?<?([^>\s]+@[^>\s]+)>?/);
+      if (match) {
+        let name = match[1] ? match[1].replace(/["<>]/g, '').trim() : '';
+        const email = match[2].trim();
+        parsed.push({ name, email });
+      } else if (item.includes('@')) {
+        parsed.push({ name: '', email: item });
+      }
+    }
+    return parsed;
+  };
+
+  const startBulkSend = async () => {
+    if (!subject || !body) return alert("Subject and Body are required!");
+    const parsed = parseRecipients(recipientList);
+    if (parsed.length === 0) return alert("No valid emails found!");
+    if (parsed.length > 500) return alert("Maximum 500 emails allowed at once to protect your Gmail account!");
+    
+    if (!confirm(`Are you sure you want to send ${parsed.length} personalized emails?`)) return;
+
+    setSendingState({ total: parsed.length, sent: 0, failed: 0, status: 'sending', currentIdx: 0 });
+    setLogs([]);
+
+    for (let i = 0; i < parsed.length; i++) {
+      const contact = parsed[i];
+      const personalizedSubject = subject.replace(/\[Name\]/ig, contact.name || 'there');
+      const personalizedBody = body.replace(/\[Name\]/ig, contact.name || 'there');
+      
+      setSendingState(prev => ({ ...prev, currentIdx: i }));
+
+      try {
+        const res = await fetch("/api/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: contact.name ? `${contact.name} <${contact.email}>` : contact.email,
+            subject: personalizedSubject,
+            body: personalizedBody
+          })
+        });
+        
+        if (res.ok) {
+          setLogs(prev => [`✅ Sent to: ${contact.email}`, ...prev]);
+          setSendingState(prev => ({ ...prev, sent: prev.sent + 1 }));
+        } else {
+          const errData = await res.json();
+          setLogs(prev => [`❌ Failed to send to: ${contact.email} (${errData.error})`, ...prev]);
+          setSendingState(prev => ({ ...prev, failed: prev.failed + 1 }));
+        }
+      } catch (e) {
+        setLogs(prev => [`❌ Error sending to: ${contact.email}`, ...prev]);
+        setSendingState(prev => ({ ...prev, failed: prev.failed + 1 }));
+      }
+      
+      // Delay to avoid hitting Gmail rate limits too aggressively
+      await new Promise(r => setTimeout(r, 800));
+    }
+    setSendingState(prev => ({ ...prev, status: 'done' }));
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>Bulk Send (Mail Merge)</h2>
+      <p style={{ fontSize: 14, color: "#64748B", marginBottom: 24 }}>
+        Send personalized emails to a list of recipients. Use <strong>[Name]</strong> in your subject or body, and it will be replaced by the recipient's name! Format: <code>John Doe &lt;john@example.com&gt;, jane@test.com</code>
+      </p>
+
+      {sendingState.status !== 'idle' && (
+        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", padding: 20, borderRadius: 8, marginBottom: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", marginBottom: 12 }}>
+            {sendingState.status === 'sending' ? `Sending ${sendingState.currentIdx + 1} of ${sendingState.total}...` : 'Finished!'}
+          </div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+            <span style={{ color: "#059669", fontWeight: 500 }}>✅ {sendingState.sent} Sent</span>
+            <span style={{ color: "#DC2626", fontWeight: 500 }}>❌ {sendingState.failed} Failed</span>
+          </div>
+          <div style={{ maxHeight: 150, overflowY: "auto", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 6, padding: 8, fontSize: 12, color: "#475569" }}>
+            {logs.map((log, idx) => <div key={idx} style={{ padding: "4px 0" }}>{log}</div>)}
+          </div>
+          {sendingState.status === 'done' && (
+            <button onClick={() => setSendingState({ status: 'idle', total: 0, sent: 0, failed: 0, currentIdx: 0 })} style={{ ...btnStyle, marginTop: 16 }}>Reset</button>
+          )}
+        </div>
+      )}
+
+      <div style={{ opacity: sendingState.status === 'sending' ? 0.5 : 1, pointerEvents: sendingState.status === 'sending' ? 'none' : 'auto' }}>
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Recipient List (Comma or Line separated)</label>
+          <textarea 
+            value={recipientList} 
+            onChange={e => setRecipientList(e.target.value)}
+            style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
+            placeholder="John Doe <john@example.com>,\nJane <jane@example.com>,\nalex@example.com"
+          />
+          <div style={{ fontSize: 12, color: "#64748B", marginTop: 6, textAlign: "right" }}>
+            Detected: {parseRecipients(recipientList).length} valid email(s)
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Subject</label>
+          <input 
+            value={subject} 
+            onChange={e => setSubject(e.target.value)}
+            style={inputStyle}
+            placeholder="Special Offer for [Name]!"
+          />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={labelStyle}>Message Body</label>
+          <textarea 
+            value={body} 
+            onChange={e => setBody(e.target.value)}
+            style={{ ...inputStyle, minHeight: 250, resize: "vertical" }}
+            placeholder="Hello [Name],\n\nWe wanted to reach out regarding..."
+          />
+        </div>
+
+        <button onClick={startBulkSend} style={{ ...primaryBtn, width: "100%", padding: "14px 24px", fontSize: 16 }}>
+          🚀 Send All ({parseRecipients(recipientList).length} Emails)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Scheduled Tab ─────────────────────────────────────────────────────────────
 
 function ScheduledTab() {
@@ -738,6 +879,7 @@ function ScheduledTab() {
 const TABS = [
   { id: "compose",   label: "AI Compose", icon: "✨" },
   { id: "inbox",     label: "Inbox Review", icon: "📥" },
+  { id: "bulk",      label: "Bulk Send",  icon: "📢" },
   { id: "templates", label: "Templates",  icon: "📄" },
   { id: "auto",      label: "Auto-reply", icon: "🔁" },
   { id: "schedule",  label: "Scheduled",  icon: "📅" },
@@ -811,6 +953,7 @@ export default function App() {
           <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
             {tab === "compose"   && <ComposeTab emailsSent={emailsSent} setEmailsSent={setEmailsSent} />}
             {tab === "inbox"     && <InboxTab />}
+            {tab === "bulk"      && <BulkSendTab />}
             {tab === "templates" && <TemplatesTab />}
             {tab === "auto"      && <AutoReplyTab />}
             {tab === "schedule"  && <ScheduledTab />}
