@@ -210,21 +210,21 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
       const res  = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "grok-2-latest", messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ prompt }),
       });
       
       const data = await res.json();
       
       if (!res.ok) {
-        setResult(`Error: ${data.error || 'Failed to generate email'}`);
-      } else if (data.choices && data.choices[0] && data.choices[0].message) {
-        const text = data.choices[0].message.content;
+        setResult(`Error: ${data.error?.message || data.error || 'Failed to generate email'}`);
+      } else if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+        const text = data.candidates[0].content.parts[0].text;
         setResult(text);
         const { subj, body } = parseEmail(text);
         setEditSubject(subj); setEditBody(body);
         setEmailsSent(n => n + 1);
       } else {
-        setResult("Error: Grok returned unexpected data format.");
+        setResult("Error: Gemini returned unexpected data format.");
       }
     } catch (err) {
       setResult(`Error: Could not generate email. (${err.message}). Are you running on Vercel?`);
@@ -459,7 +459,7 @@ function AutoReplyTab() {
       <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 24 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginBottom: 6 }}>1. Define AI Rules</div>
         <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
-          Write simple instructions below. When new emails arrive, Grok AI will read them and automatically apply the correct rule to generate a response.
+          Write simple instructions below. When new emails arrive, Gemini AI will read these enabled rules and apply them automatically to incoming emails.
         </div>
         
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -619,7 +619,7 @@ export default function App() {
 
       <div style={{ borderTop: "1px solid #F3F4F6", padding: "10px 20px", background: "#F9FAFB", fontSize: 11, color: "#9CA3AF", display: "flex", justifyContent: "space-between", marginTop: "auto" }}>
         <span>EkviraExportHouse · Export Trade CRM</span>
-        <span>Powered by Grok AI</span>
+        <span>Powered by Gemini AI</span>
       </div>
     </div>
   );

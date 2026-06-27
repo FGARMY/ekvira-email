@@ -9,10 +9,10 @@ export default async function handler(req, res) {
 
   try {
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-    const xaiKey = process.env.XAI_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
 
-    if (!refreshToken || !xaiKey) {
-      return res.status(500).json({ error: 'Missing environment variables (GOOGLE_REFRESH_TOKEN or XAI_API_KEY)' });
+    if (!refreshToken || !geminiKey) {
+      return res.status(500).json({ error: 'Missing environment variables (GOOGLE_REFRESH_TOKEN or GEMINI_API_KEY)' });
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -124,15 +124,13 @@ ${activeRulesText}
 If none of the specific rules apply, just write a standard polite acknowledgment stating the team will get back to them.
 Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.`;
 
-      const aiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+      const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${xaiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-2-latest',
-          messages: [{ role: 'user', content: prompt }]
+          contents: [{ parts: [{ text: prompt }] }]
         })
       });
 
@@ -140,12 +138,12 @@ Write ONLY the body of the response email. Do not include the subject line or an
       let replyBody = "Thank you for your email. We will get back to you shortly.";
       
       if (!aiResponse.ok) {
-        console.error("Grok API Error:", aiData);
-        logs.push(`Grok AI Failed: ${aiData.error?.message || 'Unknown error'}`);
-      } else if (aiData.choices && aiData.choices[0] && aiData.choices[0].message) {
-        replyBody = aiData.choices[0].message.content;
+        console.error("Gemini API Error:", aiData);
+        logs.push(`Gemini AI Failed: ${aiData.error?.message || 'Unknown error'}`);
+      } else if (aiData.candidates && aiData.candidates[0] && aiData.candidates[0].content && aiData.candidates[0].content.parts[0]) {
+        replyBody = aiData.candidates[0].content.parts[0].text;
       } else {
-        logs.push("Grok returned unexpected data format.");
+        logs.push("Gemini returned unexpected data format.");
       }
 
       // 5. Send reply via Gmail API

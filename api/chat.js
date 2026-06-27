@@ -1,5 +1,5 @@
 // api/chat.js  –  Vercel serverless function
-// Proxies requests to Anthropic so the API key stays server-side.
+// Proxies requests to Gemini so the API key stays server-side.
 
 export default async function handler(req, res) {
   // Allow requests only from our own app
@@ -15,25 +15,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const GROK_API_KEY = process.env.XAI_API_KEY;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-  if (!GROK_API_KEY) {
-    return res.status(500).json({ error: 'API key not configured on server.' });
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server.' });
   }
 
   try {
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    const prompt = req.body.prompt;
+    
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROK_API_KEY}`
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      }),
     });
 
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to reach Grok API', detail: err.message });
+    return res.status(500).json({ error: 'Failed to reach Gemini API', detail: err.message });
   }
 }
