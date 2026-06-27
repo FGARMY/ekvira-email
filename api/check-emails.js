@@ -124,7 +124,7 @@ ${activeRulesText}
 If none of the specific rules apply, just write a standard polite acknowledgment stating the team will get back to them.
 Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.`;
 
-      const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+      const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

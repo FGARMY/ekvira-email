@@ -505,6 +505,147 @@ function AutoReplyTab() {
   );
 }
 
+// ─── Inbox Tab ─────────────────────────────────────────────────────────────────
+
+function InboxTab() {
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedEmail, setSelectedEmail] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const fetchInbox = async () => {
+    setLoading(true); setError(null); setSelectedEmail(null);
+    try {
+      const res = await fetch("/api/inbox");
+      const data = await res.json();
+      if (data.error) setError(data.error);
+      else setEmails(data.emails || []);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchInbox(); }, []);
+
+  const generateReply = async (email) => {
+    setSelectedEmail(email); setGenerating(true); setDraft("");
+    try {
+      const rules = JSON.parse(localStorage.getItem('ekvira-autoreply-rules') || "[]");
+      const activeRulesText = rules.filter(r => r.enabled).map(r => r.desc).join("\\n");
+      const prompt = `You are the AI auto-reply assistant for EkviraExportHouse, an Indian export trading company. 
+We received an email from: ${email.sender}
+Subject: ${email.subject}
+Message: ${email.bodyFull}
+
+Please read the email and apply the most relevant rule from this list:
+${activeRulesText || "Rule 1: For all general inquiries, reply politely thanking them and stating that the team will contact them in a few hours."}
+
+If none of the specific rules apply, just write a standard polite acknowledgment stating the team will get back to them.
+Write ONLY the body of the response email. Do not include the subject line or any commentary. Keep it professional.`;
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (res.ok && data.candidates && data.candidates[0].content.parts[0]) {
+        setDraft(data.candidates[0].content.parts[0].text);
+      } else {
+        alert("Failed to generate: " + (data.error?.message || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Error generating reply: " + err.message);
+    }
+    setGenerating(false);
+  };
+
+  const sendReply = async () => {
+    setSending(true);
+    const toAddress = selectedEmail.sender.match(/<([^>]+)>/) ? selectedEmail.sender.match(/<([^>]+)>/)[1] : selectedEmail.sender;
+    try {
+      const res = await fetch("/api/send-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: toAddress,
+          subject: selectedEmail.subject,
+          body: draft,
+          threadMessageId: selectedEmail.messageId,
+          gmailId: selectedEmail.id
+        })
+      });
+      if (res.ok) {
+        alert("Sent successfully!");
+        setSelectedEmail(null);
+        fetchInbox(); // refresh
+      } else {
+        const d = await res.json();
+        alert("Failed to send: " + d.error);
+      }
+    } catch (err) {
+      alert("Error sending: " + err.message);
+    }
+    setSending(false);
+  };
+
+  if (selectedEmail && (generating || draft)) {
+    return (
+      <div style={cardStyle}>
+        <button onClick={() => setSelectedEmail(null)} style={{ ...btnStyle, marginBottom: 16 }}>← Back to Inbox</button>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16 }}>Review Reply Draft</h2>
+        <div style={{ background: "#F8FAFC", padding: 16, borderRadius: 8, marginBottom: 16, border: "1px solid #E2E8F0" }}>
+          <strong>Replying to:</strong> {selectedEmail.sender}<br />
+          <strong>Subject:</strong> Re: {selectedEmail.subject}
+        </div>
+        <label style={labelStyle}>AI Generated Draft</label>
+        <textarea 
+          value={draft} 
+          onChange={e => setDraft(e.target.value)}
+          style={{ ...inputStyle, minHeight: 200, resize: "vertical", marginBottom: 16 }}
+          placeholder={generating ? "Generating..." : ""}
+          disabled={generating}
+        />
+        <button onClick={sendReply} disabled={generating || sending} style={{ ...primaryBtn, padding: "12px 24px" }}>
+          {sending ? "⏳ Sending..." : "📤 Send Reply"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Unread Inbox</h2>
+        <button onClick={fetchInbox} style={btnStyle} disabled={loading}>{loading ? "⏳ Loading..." : "🔄 Refresh"}</button>
+      </div>
+      
+      {error && <div style={{ color: "#DC2626", marginBottom: 16 }}>Error: {error}</div>}
+      
+      {!loading && emails.length === 0 && (
+        <div style={{ color: "#64748B", textAlign: "center", padding: 32 }}>No unread emails found.</div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {emails.map(email => (
+          <div key={email.id} style={{ border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", background: "#F8FAFC" }}>
+            <div style={{ flex: 1, paddingRight: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{email.sender}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#1E293B", marginBottom: 8 }}>{email.subject}</div>
+              <div style={{ fontSize: 13, color: "#64748B" }}>{email.bodySnippet}...</div>
+            </div>
+            <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Scheduled Tab ─────────────────────────────────────────────────────────────
 
 function ScheduledTab() {
@@ -570,6 +711,7 @@ function ScheduledTab() {
 
 const TABS = [
   { id: "compose",   label: "AI Compose", icon: "✨" },
+  { id: "inbox",     label: "Inbox Review", icon: "📥" },
   { id: "templates", label: "Templates",  icon: "📄" },
   { id: "auto",      label: "Auto-reply", icon: "🔁" },
   { id: "schedule",  label: "Scheduled",  icon: "📅" },
@@ -642,6 +784,7 @@ export default function App() {
         <div style={{ flex: 1, overflowY: "auto", padding: "32px", scrollBehavior: "smooth" }}>
           <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
             {tab === "compose"   && <ComposeTab emailsSent={emailsSent} setEmailsSent={setEmailsSent} />}
+            {tab === "inbox"     && <InboxTab />}
             {tab === "templates" && <TemplatesTab />}
             {tab === "auto"      && <AutoReplyTab />}
             {tab === "schedule"  && <ScheduledTab />}
