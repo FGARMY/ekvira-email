@@ -131,7 +131,7 @@ Write ONLY the body of the response email. Do not include the subject line or an
           'Authorization': `Bearer ${xaiKey}`
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: 'grok-2-latest',
           messages: [{ role: 'user', content: prompt }]
         })
       });

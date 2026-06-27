@@ -210,7 +210,7 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
       const res  = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "grok-beta", messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: "grok-2-latest", messages: [{ role: "user", content: prompt }] }),
       });
       
       const data = await res.json();
