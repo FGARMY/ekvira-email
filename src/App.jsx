@@ -593,7 +593,7 @@ export default function App() {
   const [emailsSent, setEmailsSent] = useState(0);
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#fff", maxWidth: 680, margin: "0 auto", borderRadius: 14, border: "1px solid #E5E7EB", overflow: "hidden" }}>
+    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#fff", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ background: "#1E3A8A", padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#3B82F6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📦</div>
         <div>
@@ -617,7 +617,7 @@ export default function App() {
         {tab === "schedule"  && <ScheduledTab />}
       </div>
 
-      <div style={{ borderTop: "1px solid #F3F4F6", padding: "10px 20px", background: "#F9FAFB", fontSize: 11, color: "#9CA3AF", display: "flex", justifyContent: "space-between" }}>
+      <div style={{ borderTop: "1px solid #F3F4F6", padding: "10px 20px", background: "#F9FAFB", fontSize: 11, color: "#9CA3AF", display: "flex", justifyContent: "space-between", marginTop: "auto" }}>
         <span>EkviraExportHouse · Export Trade CRM</span>
         <span>Powered by Grok AI</span>
       </div>
