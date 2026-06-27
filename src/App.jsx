@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -397,7 +397,6 @@ function TemplatesTab() {
 // ─── Auto-reply Tab ────────────────────────────────────────────────────────────
 
 function AutoReplyTab() {
-  // Load rules from localStorage or default
   const getInitialRules = () => {
     const saved = localStorage.getItem('ekvira-autoreply-rules');
     if (saved) return JSON.parse(saved);
@@ -411,28 +410,20 @@ function AutoReplyTab() {
   const [inboxLogs, setInboxLogs] = useState(null);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Save rules to localStorage whenever they change
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('ekvira-autoreply-rules', JSON.stringify(rules));
   }, [rules]);
 
   const toggle = (id) => setRules(r => r.map(rule => rule.id === id ? { ...rule, enabled: !rule.enabled } : rule));
-  
-  const updateRuleDesc = (id, newDesc) => {
-    setRules(r => r.map(rule => rule.id === id ? { ...rule, desc: newDesc } : rule));
-  };
-  
-  const updateRuleTitle = (id, newTitle) => {
-    setRules(r => r.map(rule => rule.id === id ? { ...rule, title: newTitle } : rule));
-  };
+  const updateRuleDesc = (id, newDesc) => setRules(r => r.map(rule => rule.id === id ? { ...rule, desc: newDesc } : rule));
+  const updateRuleTitle = (id, newTitle) => setRules(r => r.map(rule => rule.id === id ? { ...rule, title: newTitle } : rule));
+  const deleteRule = (id) => setRules(r => r.filter(rule => rule.id !== id));
 
   const checkInbox = async () => {
     setIsChecking(true);
     setInboxLogs(null);
     try {
-      // Gather only enabled rules to send to AI
       const enabledRules = rules.filter(r => r.enabled).map(r => r.desc);
-      
       const res = await fetch("/api/check-emails", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -457,65 +448,70 @@ function AutoReplyTab() {
 
   return (
     <div>
-      <div style={labelStyle}>Auto-reply rules (AI Instructions)</div>
-      <div style={{ fontSize: 12, color: "#4B5563", marginBottom: 8 }}>
-        Grok AI will read these enabled rules and apply them automatically to incoming emails.
-      </div>
-      <div style={{ border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden", marginTop: 8 }}>
-        {rules.map((rule, i) => (
-          <div key={rule.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: i < rules.length - 1 ? "1px solid #F3F4F6" : "none" }}>
-            <div style={{ marginTop: 2 }}>
-              <Toggle checked={rule.enabled} onChange={() => toggle(rule.id)} />
+      <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 24 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginBottom: 6 }}>1. Define AI Rules</div>
+        <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
+          Write simple instructions below. When new emails arrive, Grok AI will read them and automatically apply the correct rule to generate a response.
+        </div>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {rules.map((rule) => (
+            <div key={rule.id} style={{ background: "#fff", border: `1px solid ${rule.enabled ? '#CBD5E1' : '#E2E8F0'}`, borderRadius: 10, padding: 14, opacity: rule.enabled ? 1 : 0.6, transition: "opacity 0.2s" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                  <Toggle checked={rule.enabled} onChange={() => toggle(rule.id)} />
+                  <input 
+                    type="text" 
+                    value={rule.title} 
+                    onChange={(e) => updateRuleTitle(rule.id, e.target.value)}
+                    style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", border: "none", outline: "none", width: "100%", background: "transparent" }} 
+                    placeholder="E.g., Payment Inquiry"
+                  />
+                </div>
+                <button onClick={() => deleteRule(rule.id)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 16 }} title="Delete rule">×</button>
+              </div>
+              <div style={{ paddingLeft: 46 }}>
+                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>AI Instruction</div>
+                <textarea 
+                  value={rule.desc}
+                  onChange={(e) => updateRuleDesc(rule.id, e.target.value)}
+                  style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "#334155", outline: "none", resize: "vertical", minHeight: 50, fontFamily: "inherit", boxSizing: "border-box" }}
+                  placeholder="If they ask about X, tell them Y..."
+                />
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <input 
-                type="text" 
-                value={rule.title} 
-                onChange={(e) => updateRuleTitle(rule.id, e.target.value)}
-                style={{ fontSize: 13, fontWeight: 500, color: "#111827", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0, margin: 0 }} 
-                placeholder="Rule Title"
-              />
-              <textarea 
-                value={rule.desc}
-                onChange={(e) => updateRuleDesc(rule.id, e.target.value)}
-                style={{ fontSize: 12, color: "#4B5563", marginTop: 4, width: "100%", border: "1px dashed #D1D5DB", borderRadius: 4, padding: "4px 6px", outline: "none", resize: "vertical", minHeight: 40 }}
-                placeholder="Instruct the AI exactly how to respond..."
-              />
-            </div>
-            <Badge status={rule.enabled ? "active" : "off"} />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div style={{ marginTop: 14 }}>
-        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New automation", desc: "If the email mentions X, reply with Y.", enabled: true }])} style={btnStyle}>
-          + Add rule
+        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New Automation", desc: "", enabled: true }])} style={{ ...btnStyle, marginTop: 12, width: "100%", justifyContent: "center", borderStyle: "dashed" }}>
+          + Add another rule
         </button>
       </div>
 
-      <div style={{ marginTop: 18, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "12px 14px" }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#1E40AF", marginBottom: 4 }}>💡 Triggering Auto-Replies</div>
-        <div style={{ fontSize: 12, color: "#1E3A8A", lineHeight: 1.6 }}>
-          Click the button below to check your inbox. The backend will read your unread emails and apply your enabled AI rules!
+      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#1E3A8A", marginBottom: 6 }}>2. Run Automations</div>
+        <div style={{ fontSize: 13, color: "#1E40AF", marginBottom: 16, lineHeight: 1.5 }}>
+          Connect your Gmail account, then click "Check Inbox". The system will read your unread emails and apply your enabled rules automatically.
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <button style={{ ...primaryBtn, fontSize: 12, padding: "6px 12px" }} onClick={() => window.location.href = "/api/auth/google"}>
-            Connect Gmail (OAuth) ↗
+        
+        <div style={{ display: "flex", gap: 10 }}>
+          <button style={{ ...primaryBtn, flex: 1, justifyContent: "center", padding: "10px" }} onClick={() => window.location.href = "/api/auth/google"}>
+            Connect Gmail ↗
           </button>
-          <button style={{ ...successBtn, fontSize: 12, padding: "6px 12px", opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
-            {isChecking ? "⏳ Checking & Replying..." : "🔄 Check Inbox Now"}
+          <button style={{ ...successBtn, flex: 1, justifyContent: "center", padding: "10px", opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
+            {isChecking ? "⏳ Checking..." : "🔄 Check Inbox Now"}
           </button>
         </div>
 
         {inboxLogs && (
-          <div style={{ marginTop: 14, background: "#fff", borderRadius: 8, padding: 12, border: `1px solid ${inboxLogs.type === 'error' ? '#FCA5A5' : '#D1D5DB'}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: inboxLogs.type === 'error' ? '#DC2626' : '#111827', marginBottom: 6 }}>
+          <div style={{ marginTop: 16, background: "#fff", borderRadius: 8, padding: 14, border: `1px solid ${inboxLogs.type === 'error' ? '#FCA5A5' : '#E2E8F0'}` }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: inboxLogs.type === 'error' ? '#DC2626' : '#0F172A', marginBottom: 8 }}>
               {inboxLogs.message}
             </div>
             {inboxLogs.logs && inboxLogs.logs.length > 0 && (
-              <div style={{ fontSize: 11, color: "#4B5563", fontFamily: "monospace", whiteSpace: "pre-wrap", background: "#F9FAFB", padding: 8, borderRadius: 6, border: "1px solid #E5E7EB" }}>
+              <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", whiteSpace: "pre-wrap", background: "#F8FAFC", padding: 10, borderRadius: 6, border: "1px solid #E2E8F0" }}>
                 {inboxLogs.logs.map((log, i) => (
-                  <div key={i} style={{ marginBottom: 4 }}>• {log}</div>
+                  <div key={i} style={{ marginBottom: 6 }}>• {log}</div>
                 ))}
               </div>
             )}
