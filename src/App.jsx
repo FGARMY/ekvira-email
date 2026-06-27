@@ -119,7 +119,25 @@ const CopyBtn = ({ text }) => {
   );
 };
 
-// ─── Compose Tab ───────────────────────────────────────────────────────────────
+// ─── Shared Utilities ──────────────────────────────────────────────────────────
+
+const parseRecipients = (text) => {
+  const items = text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+  const parsed = [];
+  for (const item of items) {
+    const match = item.match(/(?:(.*)\s+)?<?([^>\s]+@[^>\s]+)>?/);
+    if (match) {
+      let name = match[1] ? match[1].replace(/["<>]/g, '').trim() : '';
+      const email = match[2].trim();
+      parsed.push({ name, email });
+    } else if (item.includes('@')) {
+      parsed.push({ name: '', email: item });
+    }
+  }
+  return parsed;
+};
+
+// ─── Components ────────────────────────────────────────────────────────────────
 
 function ComposeTab({ emailsSent, setEmailsSent }) {
   const [purpose, setPurpose]       = useState("");
@@ -886,23 +904,6 @@ function BulkSendTab() {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const parseRecipients = (text) => {
-    // Basic CSV or comma/semicolon separated parser
-    const items = text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
-    const parsed = [];
-    for (const item of items) {
-      const match = item.match(/(?:(.*)\s+)?<?([^>\s]+@[^>\s]+)>?/);
-      if (match) {
-        let name = match[1] ? match[1].replace(/["<>]/g, '').trim() : '';
-        const email = match[2].trim();
-        parsed.push({ name, email });
-      } else if (item.includes('@')) {
-        parsed.push({ name: '', email: item });
-      }
-    }
-    return parsed;
-  };
-
   const loadContactsByTag = () => {
     const crm = JSON.parse(localStorage.getItem('ekvira-contacts') || '[]');
     if (crm.length === 0) return alert("You have no contacts saved in the Contacts Tab!");
@@ -1226,18 +1227,67 @@ function ContactsTab() {
 // ─── Scheduled Tab ─────────────────────────────────────────────────────────────
 
 function ScheduledTab() {
-  const [campaigns, setCampaigns] = useState(CAMPAIGNS_DEFAULT);
-  const [name, setName]           = useState("");
-  const [seg, setSeg]             = useState(SEGMENTS[0]);
-  const [dt, setDt]               = useState("");
-  const [saved, setSaved]         = useState(false);
+  const [campaigns, setCampaigns] = useState(() => JSON.parse(localStorage.getItem('ekvira-campaigns') || '[]'));
+  
+  const [name, setName] = useState("");
+  const [recipientList, setRecipientList] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [speed, setSpeed] = useState("safe");
+  const [dt, setDt] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCampaigns(JSON.parse(localStorage.getItem('ekvira-campaigns') || '[]'));
+    };
+    window.addEventListener('campaignsUpdated', handleUpdate);
+    return () => window.removeEventListener('campaignsUpdated', handleUpdate);
+  }, []);
 
   const schedule = () => {
-    if (!name.trim() || !dt) { alert("Please fill in campaign name and send time."); return; }
-    const d = new Date(dt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-    setCampaigns(c => [{ id: Date.now(), name, seg, date: d, status: "scheduled" }, ...c]);
-    setName(""); setDt(""); setSaved(true);
+    if (!name.trim() || !dt || !recipientList.trim() || !subject.trim() || !body.trim()) {
+      alert("Please fill in all campaign fields.");
+      return;
+    }
+    
+    const parsedDate = new Date(dt);
+    if (parsedDate <= new Date()) {
+      alert("Scheduled time must be in the future.");
+      return;
+    }
+
+    const d = parsedDate.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+    const newCampaign = {
+      id: Date.now(),
+      name,
+      recipientList,
+      subject,
+      body,
+      speed,
+      date: d,
+      rawDate: parsedDate.toISOString(),
+      status: "scheduled"
+    };
+
+    const updated = [newCampaign, ...campaigns];
+    setCampaigns(updated);
+    localStorage.setItem('ekvira-campaigns', JSON.stringify(updated));
+    
+    setName(""); setRecipientList(""); setSubject(""); setBody(""); setDt("");
+    setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const loadContactsByTag = () => {
+    const crm = JSON.parse(localStorage.getItem('ekvira-contacts') || '[]');
+    if (crm.length === 0) return alert("You have no contacts saved!");
+    const tag = prompt("Enter a tag to filter by (leave blank for ALL):");
+    let filtered = crm;
+    if (tag) filtered = crm.filter(c => c.tags.some(t => t.toLowerCase() === tag.trim().toLowerCase()));
+    if (filtered.length === 0) return alert("No contacts found.");
+    const formatted = filtered.map(c => c.name ? `${c.name} <${c.email}>` : c.email).join(',\\n');
+    setRecipientList(prev => prev ? prev + ',\\n' + formatted : formatted);
   };
 
   return (
@@ -1249,34 +1299,87 @@ function ScheduledTab() {
             <div key={c.id} style={{ border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC" }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{c.name}</div>
-                <div style={{ fontSize: 13, color: "#64748B" }}>{c.seg} · {c.status === "sent" ? "Sent on" : "Sending at"} {c.date}</div>
+                <div style={{ fontSize: 13, color: "#64748B" }}>
+                  {parseRecipients(c.recipientList).length} Recipients · {c.status === "sent" ? "Sent on" : c.status === "sending" ? "Sending started at" : "Sending at"} {c.date}
+                </div>
               </div>
               <Badge status={c.status} />
             </div>
           ))}
+          {campaigns.length === 0 && <div style={{ fontSize: 14, color: "#64748B" }}>No campaigns scheduled yet.</div>}
         </div>
       </div>
 
       <div style={cardStyle}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Schedule New Campaign</h2>
+        
         <div style={{ display: "grid", gap: 16 }}>
           <div>
             <label style={labelStyle}>Campaign Name</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q4 Trade Digest" style={inputStyle} />
           </div>
+
           <div>
-            <label style={labelStyle}>Target Segment</label>
-            <select value={seg} onChange={e => setSeg(e.target.value)} style={inputStyle}>
-              {SEGMENTS.map(s => <option key={s}>{s}</option>)}
-            </select>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <label style={labelStyle}>Recipient List (Comma or Line separated)</label>
+              <button onClick={loadContactsByTag} style={{ ...btnStyle, padding: "4px 10px", fontSize: 13, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8", margin: 0 }}>👥 Load from Contacts</button>
+            </div>
+            <textarea 
+              value={recipientList} 
+              onChange={e => setRecipientList(e.target.value)}
+              style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
+              placeholder="John Doe <john@example.com>,\njane@example.com"
+            />
           </div>
+
           <div>
-            <label style={labelStyle}>Send Date & Time</label>
-            <input type="datetime-local" value={dt} onChange={e => setDt(e.target.value)} style={inputStyle} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <label style={labelStyle}>Email Subject</label>
+              <select 
+                onChange={e => {
+                  const t = (JSON.parse(localStorage.getItem('ekvira-templates') || '{}'))[e.target.value];
+                  if (t) { setSubject(t.subject); setBody(t.body); }
+                  e.target.value = "";
+                }} 
+                style={{ padding: "4px 10px", fontSize: 13, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1D4ED8", borderRadius: 6, outline: "none" }}
+              >
+                <option value="">📄 Load Template</option>
+                {Object.entries(JSON.parse(localStorage.getItem('ekvira-templates') || '{}')).map(([k, t]) => (
+                  <option key={k} value={k}>{t.icon} {t.label}</option>
+                ))}
+              </select>
+            </div>
+            <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Exclusive offer for [Name]!" style={inputStyle} />
           </div>
+
+          <div>
+            <label style={labelStyle}>Message Body</label>
+            <textarea 
+              value={body} 
+              onChange={e => setBody(e.target.value)}
+              style={{ ...inputStyle, minHeight: 150, resize: "vertical" }}
+              placeholder="Hello [Name],\n\nWe wanted to reach out regarding..."
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Sending Speed</label>
+              <select value={speed} onChange={e => setSpeed(e.target.value)} style={inputStyle}>
+                <option value="fast">🏎️ Fast (1/sec)</option>
+                <option value="safe">🚶 Safe (10/2min)</option>
+                <option value="drip">🐢 Drip (5/2min)</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Send Date & Time</label>
+              <input type="datetime-local" value={dt} onChange={e => setDt(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 8 }}>
             <button onClick={schedule} style={primaryBtn}>📅 Schedule Campaign</button>
-            {saved && <span style={{ fontSize: 14, fontWeight: 500, color: "#10B981" }}>✓ Campaign scheduled successfully!</span>}
+            {saved && <span style={{ fontSize: 14, fontWeight: 500, color: "#10B981" }}>✓ Campaign scheduled! (Keep dashboard open)</span>}
           </div>
         </div>
       </div>
@@ -1329,6 +1432,69 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [autoPilot]);
+
+  // Campaign Executor Interval
+  useEffect(() => {
+    const executeCampaign = async (campaign) => {
+      const parsed = parseRecipients(campaign.recipientList);
+      if (parsed.length === 0) return;
+      
+      let delayMs = 1000;
+      if (campaign.speed === 'safe') delayMs = 12000;
+      if (campaign.speed === 'drip') delayMs = 24000;
+
+      for (let i = 0; i < parsed.length; i++) {
+        const rec = parsed[i];
+        const personalizedSubject = campaign.subject.replace(/\[Name\]/gi, rec.name || "Customer");
+        const personalizedBody = campaign.body.replace(/\[Name\]/gi, rec.name || "Customer");
+
+        try {
+          await fetch("/api/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: rec.email,
+              subject: personalizedSubject,
+              body: personalizedBody,
+              attachments: [] // Scheduled attachments could be added later
+            })
+          });
+        } catch (e) {
+          console.error("Failed to send to", rec.email, e);
+        }
+
+        if (i < parsed.length - 1) {
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+      }
+    };
+
+    const campaignInterval = setInterval(() => {
+      const campaigns = JSON.parse(localStorage.getItem('ekvira-campaigns') || '[]');
+      const now = new Date();
+      let modified = false;
+
+      for (let c of campaigns) {
+        if (c.status === 'scheduled' && c.rawDate && now >= new Date(c.rawDate)) {
+          c.status = 'sending';
+          modified = true;
+          executeCampaign(c).then(() => {
+            const latest = JSON.parse(localStorage.getItem('ekvira-campaigns') || '[]');
+            const updated = latest.map(cam => cam.id === c.id ? { ...cam, status: 'sent' } : cam);
+            localStorage.setItem('ekvira-campaigns', JSON.stringify(updated));
+            window.dispatchEvent(new Event('campaignsUpdated'));
+          });
+        }
+      }
+      
+      if (modified) {
+        localStorage.setItem('ekvira-campaigns', JSON.stringify(campaigns));
+        window.dispatchEvent(new Event('campaignsUpdated'));
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(campaignInterval);
+  }, []);
 
   const activeTabDetails = TABS.find(t => t.id === tab);
 
