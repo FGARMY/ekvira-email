@@ -6,89 +6,29 @@ const TEMPLATES = {
   followup: {
     label: "Follow-up", icon: "📬",
     subject: "Following up on your inquiry — EkviraExportHouse",
-    body: `Dear [CLIENT],
-
-Thank you for reaching out to us. We wanted to follow up on your recent inquiry and ensure you have all the information needed.
-
-Our team at EkviraExportHouse specialises in premium quality exports and we are delighted to assist you. Please find the details of your inquiry addressed below.
-
-Kindly let us know if you require any further clarification. We look forward to a long and fruitful association.
-
-Warm regards,
-EkviraExportHouse Team`,
+    body: `Dear [CLIENT],\n\nThank you for reaching out to us. We wanted to follow up on your recent inquiry and ensure you have all the information needed.\n\nOur team at EkviraExportHouse specialises in premium quality exports and we are delighted to assist you. Please find the details of your inquiry addressed below.\n\nKindly let us know if you require any further clarification. We look forward to a long and fruitful association.\n\nWarm regards,\nEkviraExportHouse Team`,
   },
   shipment: {
     label: "Shipment update", icon: "🚢",
     subject: "Shipment Update — Order #[ORDER_NO]",
-    body: `Dear [CLIENT],
-
-We are pleased to inform you that your order has been dispatched on [DATE].
-
-Shipment details:
-• Order No: [ORDER_NO]
-• Estimated Delivery: [ETA]
-• Tracking No: [TRACKING]
-
-Please feel free to contact us for any queries regarding your shipment.
-
-Best regards,
-EkviraExportHouse Logistics Team`,
+    body: `Dear [CLIENT],\n\nWe are pleased to inform you that your order has been dispatched on [DATE].\n\nShipment details:\n• Order No: [ORDER_NO]\n• Estimated Delivery: [ETA]\n• Tracking No: [TRACKING]\n\nPlease feel free to contact us for any queries regarding your shipment.\n\nBest regards,\nEkviraExportHouse Logistics Team`,
   },
   payment: {
     label: "Payment reminder", icon: "💳",
     subject: "Payment Reminder — Invoice #[INV_NO]",
-    body: `Dear [CLIENT],
-
-This is a gentle reminder that Invoice #[INV_NO] amounting to ₹[AMOUNT] is due on [DATE].
-
-Kindly arrange the payment at your earliest convenience to avoid any delays in processing your orders.
-
-For any payment-related queries, feel free to reach us.
-
-Thank you for your continued business.
-
-EkviraExportHouse Accounts Team`,
+    body: `Dear [CLIENT],\n\nThis is a gentle reminder that Invoice #[INV_NO] amounting to ₹[AMOUNT] is due on [DATE].\n\nKindly arrange the payment at your earliest convenience to avoid any delays in processing your orders.\n\nFor any payment-related queries, feel free to reach us.\n\nThank you for your continued business.\n\nEkviraExportHouse Accounts Team`,
   },
   quotation: {
     label: "Quotation", icon: "📄",
     subject: "Quotation / Proforma Invoice — EkviraExportHouse",
-    body: `Dear [CLIENT],
-
-Thank you for your interest in our products. Please find below the quotation as requested.
-
-[PRODUCT/SERVICE DETAILS]
-
-This quotation is valid for 15 days from the date of this email. We remain open to discussing terms further.
-
-Looking forward to your confirmation.
-
-Sincerely,
-EkviraExportHouse Sales Team`,
+    body: `Dear [CLIENT],\n\nThank you for your interest in our products. Please find below the quotation as requested.\n\n[PRODUCT/SERVICE DETAILS]\n\nThis quotation is valid for 15 days from the date of this email. We remain open to discussing terms further.\n\nLooking forward to your confirmation.\n\nSincerely,\nEkviraExportHouse Sales Team`,
   },
   welcome: {
     label: "Welcome", icon: "🎉",
     subject: "Welcome to EkviraExportHouse — We're glad to have you!",
-    body: `Dear [CLIENT],
-
-A warm welcome from all of us at EkviraExportHouse!
-
-We are excited to have you on board as our valued client. Our team is committed to delivering quality, reliability, and timely service in every transaction.
-
-Your dedicated point of contact will reach out shortly. In the meantime, do not hesitate to write to us for any queries.
-
-Thank you for choosing EkviraExportHouse.
-
-Warm regards,
-The EkviraExportHouse Team`,
+    body: `Dear [CLIENT],\n\nA warm welcome from all of us at EkviraExportHouse!\n\nWe are excited to have you on board as our valued client. Our team is committed to delivering quality, reliability, and timely service in every transaction.\n\nYour dedicated point of contact will reach out shortly. In the meantime, do not hesitate to write to us for any queries.\n\nThank you for choosing EkviraExportHouse.\n\nWarm regards,\nThe EkviraExportHouse Team`,
   },
 };
-
-const AUTO_RULES_DEFAULT = [
-  { id: 1, title: "New inquiry received",  desc: "Sends acknowledgment within 5 min", enabled: true },
-  { id: 2, title: "Payment received",       desc: "Sends receipt + next steps",        enabled: true },
-  { id: 3, title: "Shipment dispatched",    desc: "Sends tracking + ETA info",          enabled: false },
-  { id: 4, title: "Out-of-office",          desc: "Replies when team is unavailable",   enabled: false },
-];
 
 const CAMPAIGNS_DEFAULT = [
   { id: 1, name: "Monthly newsletter — Aug 2025", seg: "14 recipients",     date: "Aug 1, 9:00 AM IST", status: "scheduled" },
@@ -118,25 +58,30 @@ const TONES = ["Professional", "Warm & friendly", "Formal", "Urgent"];
 // ─── Shared styles ─────────────────────────────────────────────────────────────
 
 const inputStyle = {
-  width: "100%", padding: "8px 12px", border: "1px solid #D1D5DB", borderRadius: 8,
-  background: "#fff", color: "#111827", fontSize: 13, fontFamily: "inherit",
-  outline: "none", boxSizing: "border-box",
+  width: "100%", padding: "10px 14px", border: "1px solid #CBD5E1", borderRadius: 8,
+  background: "#F8FAFC", color: "#0F172A", fontSize: 14, fontFamily: "inherit",
+  outline: "none", boxSizing: "border-box", transition: "all 0.2s ease"
 };
 
 const labelStyle = {
-  fontSize: 11, color: "#6B7280", textTransform: "uppercase",
-  letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4,
+  fontSize: 12, color: "#64748B", fontWeight: 600, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: "0.05em"
 };
 
 const btnStyle = {
-  display: "inline-flex", alignItems: "center", gap: 6,
-  padding: "8px 14px", border: "1px solid #E5E7EB", borderRadius: 8,
-  background: "#fff", color: "#374151", fontSize: 13, cursor: "pointer",
-  fontFamily: "inherit",
+  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+  padding: "10px 18px", border: "1px solid #E2E8F0", borderRadius: 8,
+  background: "#fff", color: "#334155", fontSize: 14, fontWeight: 500, cursor: "pointer",
+  fontFamily: "inherit", transition: "all 0.2s ease", boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
 };
 
-const primaryBtn = { ...btnStyle, background: "#2563EB", color: "#fff", border: "none" };
-const successBtn = { ...btnStyle, background: "#D1FAE5", color: "#065F46", borderColor: "#6EE7B7" };
+const primaryBtn = { ...btnStyle, background: "#2563EB", color: "#fff", border: "none", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" };
+const successBtn = { ...btnStyle, background: "#10B981", color: "#fff", border: "none", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" };
+
+const cardStyle = {
+  background: "#fff", borderRadius: 16, padding: 32,
+  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+  border: "1px solid #E2E8F0", marginBottom: 24
+};
 
 // ─── UI primitives ─────────────────────────────────────────────────────────────
 
@@ -150,15 +95,15 @@ const Badge = ({ status }) => {
   };
   const s = map[status] || map.draft;
   return (
-    <span style={{ background: s.bg, color: s.color, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 99, letterSpacing: "0.03em" }}>
+    <span style={{ background: s.bg, color: s.color, fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 99, letterSpacing: "0.03em" }}>
       {s.label}
     </span>
   );
 };
 
 const Toggle = ({ checked, onChange }) => (
-  <div onClick={() => onChange(!checked)} style={{ width: 36, height: 20, borderRadius: 99, cursor: "pointer", flexShrink: 0, background: checked ? "#3B82F6" : "#D1D5DB", position: "relative", transition: "background 0.2s" }}>
-    <div style={{ position: "absolute", top: 3, left: checked ? 19 : 3, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+  <div onClick={() => onChange(!checked)} style={{ width: 44, height: 24, borderRadius: 99, cursor: "pointer", flexShrink: 0, background: checked ? "#2563EB" : "#CBD5E1", position: "relative", transition: "background 0.2s" }}>
+    <div style={{ position: "absolute", top: 2, left: checked ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
   </div>
 );
 
@@ -166,7 +111,7 @@ const CopyBtn = ({ text }) => {
   const [copied, setCopied] = useState(false);
   return (
     <button onClick={() => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={btnStyle}>
-      {copied ? "✓ Copied!" : "📋 Copy"}
+      {copied ? "✓ Copied!" : "📋 Copy Text"}
     </button>
   );
 };
@@ -206,7 +151,6 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
     };
     const prompt = `You are writing a business email for EkviraExportHouse, an Indian export trading company. Write a ${purposeLabels[purpose] || purpose} email.\n\nClient name: ${client || "[Client]"}\nTone: ${tone}\nKey details: ${notes || "(none provided)"}\n\nWrite a professional, complete email including Subject line. Keep it concise — max 150 words. Use Indian export business context naturally. Return only the email text, no commentary.`;
     try {
-      // Calls our own /api/chat proxy — API key never leaves the server
       const res  = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -266,73 +210,92 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-        {[{ n: emailsSent, l: "Emails generated today" }, { n: "2", l: "Auto-replies active" }].map((s, i) => (
-          <div key={i} style={{ background: "#F9FAFB", borderRadius: 8, padding: "12px 16px" }}>
-            <div style={{ fontSize: 22, fontWeight: 600, color: "#111827" }}>{s.n}</div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{s.l}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+        {[{ n: emailsSent, l: "Emails generated today", color: "#3B82F6", bg: "#EFF6FF" }, { n: "2", l: "Auto-replies active", color: "#10B981", bg: "#ECFDF5" }].map((s, i) => (
+          <div key={i} style={{ background: s.bg, border: `1px solid ${s.color}40`, borderRadius: 12, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+             <div style={{ fontSize: 32, fontWeight: 700, color: s.color }}>{s.n}</div>
+             <div style={{ fontSize: 14, color: "#475569", fontWeight: 500 }}>{s.l}</div>
           </div>
         ))}
       </div>
 
-      {[
-        { label: "Purpose", node: <select value={purpose} onChange={e => setPurpose(e.target.value)} style={inputStyle}>{PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select> },
-        { label: "Client name", node: <input value={client} onChange={e => setClient(e.target.value)} placeholder="e.g. Global Traders Ltd." style={inputStyle} /> },
-        { label: "Client email", node: <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="client@example.com" style={inputStyle} /> },
-        { label: "Key details / notes", node: <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="e.g. Order #EVH-2024-089, 500 kg turmeric, ETA Aug 12" style={{ ...inputStyle, resize: "none" }} /> },
-        { label: "Tone", node: <select value={tone} onChange={e => setTone(e.target.value)} style={inputStyle}>{TONES.map(t => <option key={t}>{t}</option>)}</select> },
-      ].map(({ label, node }) => (
-        <div key={label} style={{ marginBottom: 12 }}>
-          <div style={labelStyle}>{label}</div>
-          {node}
-        </div>
-      ))}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Email Details</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
+          
+          <div>
+            <label style={labelStyle}>Purpose</label>
+            <select value={purpose} onChange={e => setPurpose(e.target.value)} style={inputStyle}>{PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select>
+          </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-        <button onClick={generate} disabled={loading} style={{ ...primaryBtn, opacity: loading ? 0.7 : 1 }}>
-          {loading ? "⏳ Generating…" : "✨ Generate email"}
-        </button>
-        <button onClick={() => { setPurpose(""); setClient(""); setClientEmail(""); setNotes(""); setResult(""); setIsEditing(false); }} style={btnStyle}>✕ Clear</button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={labelStyle}>Client Name</label>
+              <input value={client} onChange={e => setClient(e.target.value)} placeholder="e.g. Global Traders Ltd." style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Client Email</label>
+              <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="client@example.com" style={inputStyle} />
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Tone</label>
+            <select value={tone} onChange={e => setTone(e.target.value)} style={inputStyle}>{TONES.map(t => <option key={t}>{t}</option>)}</select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Key Details / Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="e.g. Order #EVH-2024-089, 500 kg turmeric, ETA Aug 12" style={{ ...inputStyle, resize: "none" }} />
+          </div>
+
+          <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+            <button onClick={generate} disabled={loading} style={{ ...primaryBtn, opacity: loading ? 0.7 : 1, padding: "12px 24px", fontSize: 15 }}>
+              {loading ? "⏳ Generating with AI..." : "✨ Generate Draft"}
+            </button>
+            <button onClick={() => { setPurpose(""); setClient(""); setClientEmail(""); setNotes(""); setResult(""); setIsEditing(false); }} style={btnStyle}>✕ Clear Form</button>
+          </div>
+        </div>
       </div>
 
       {result && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ height: 1, background: "#E5E7EB", marginBottom: 14 }} />
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={labelStyle}>Generated email</div>
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Generated Email</h2>
             {!isEditing ? (
-              <button onClick={startEdit} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", border: "1px solid #D1D5DB", borderRadius: 6, background: "#fff", color: "#374151", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>✏️ Edit</button>
+              <button onClick={startEdit} style={btnStyle}>✏️ Edit Draft</button>
             ) : (
-              <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={saveEdit}   style={{ padding: "4px 10px", border: "none",            borderRadius: 6, background: "#2563EB", color: "#fff",    fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>✓ Save</button>
-                <button onClick={cancelEdit} style={{ padding: "4px 10px", border: "1px solid #D1D5DB", borderRadius: 6, background: "#fff",    color: "#6B7280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>✕ Cancel</button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={saveEdit}   style={primaryBtn}>✓ Save Changes</button>
+                <button onClick={cancelEdit} style={btnStyle}>✕ Cancel</button>
               </div>
             )}
           </div>
 
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 4, fontWeight: 500 }}>SUBJECT</div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Subject</label>
             {isEditing
-              ? <input value={editSubject} onChange={e => setEditSubject(e.target.value)} style={{ ...inputStyle, fontWeight: 500 }} />
-              : <div style={{ background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 500, color: "#0C4A6E" }}>{parseEmail(result).subj || "—"}</div>
+              ? <input value={editSubject} onChange={e => setEditSubject(e.target.value)} style={{ ...inputStyle, fontWeight: 500, fontSize: 15 }} />
+              : <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px 16px", fontSize: 15, fontWeight: 600, color: "#0F172A" }}>{parseEmail(result).subj || "—"}</div>
             }
           </div>
 
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 4, fontWeight: 500 }}>BODY</div>
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>Message Body</label>
             {isEditing
-              ? <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={10} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.75 }} />
-              : <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: 14, fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-wrap", color: "#111827", fontFamily: "inherit" }}>{parseEmail(result).body}</div>
+              ? <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={12} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.7 }} />
+              : <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "16px 20px", fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#334155", fontFamily: "inherit" }}>{parseEmail(result).body}</div>
             }
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={sendEmail} disabled={sending} style={{ ...successBtn, opacity: sending ? 0.7 : 1 }}>
-              {sending ? "⏳ Sending…" : sendSuccess ? "✓ Sent!" : "📤 Send Email"}
+          <div style={{ height: 1, background: "#E2E8F0", margin: "24px 0" }} />
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button onClick={sendEmail} disabled={sending} style={{ ...successBtn, opacity: sending ? 0.7 : 1, padding: "12px 24px", fontSize: 15 }}>
+              {sending ? "⏳ Sending Email..." : sendSuccess ? "✓ Sent Successfully!" : "📤 Send Email via Gmail"}
             </button>
             <CopyBtn text={fullText} />
-            <button onClick={() => setSaved(true)} style={btnStyle}>{saved ? "✓ Saved!" : "🔖 Save as template"}</button>
+            <button onClick={() => setSaved(true)} style={btnStyle}>{saved ? "✓ Saved!" : "🔖 Save as Template"}</button>
           </div>
         </div>
       )}
@@ -366,37 +329,47 @@ function TemplatesTab() {
 
   return (
     <div>
-      <div style={labelStyle}>Quick-insert templates</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14, marginTop: 6 }}>
-        {Object.entries(allTemplates).map(([k, t]) => (
-          <button key={k} onClick={() => setSel(k)} style={{ padding: "6px 12px", border: `1px solid ${sel === k ? "#3B82F6" : "#E5E7EB"}`, borderRadius: 8, background: sel === k ? "#EFF6FF" : "#fff", color: sel === k ? "#1D4ED8" : "#374151", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-            {t.icon} {t.label}
-          </button>
-        ))}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Quick-insert Templates</h2>
+        
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
+          {Object.entries(allTemplates).map(([k, t]) => (
+            <button key={k} onClick={() => setSel(k)} style={{ padding: "10px 16px", border: `1px solid ${sel === k ? "#3B82F6" : "#E2E8F0"}`, borderRadius: 10, background: sel === k ? "#EFF6FF" : "#F8FAFC", color: sel === k ? "#1D4ED8" : "#475569", fontSize: 14, fontWeight: sel === k ? 600 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {current && (
+          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 24 }}>
+            <div style={{ fontSize: 13, color: "#64748B", marginBottom: 12 }}>
+              <strong style={{ color: "#0F172A", fontSize: 15 }}>Subject:</strong> <span style={{ fontSize: 15, color: "#1E293B" }}>{current.subject}</span>
+            </div>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: 20, fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#334155", minHeight: 180, fontFamily: "inherit" }}>
+              {current.body}
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+              <button onClick={copy} style={primaryBtn}>{copied ? "✓ Copied to Clipboard!" : "📋 Copy Template"}</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ height: 1, background: "#E5E7EB", marginBottom: 12 }} />
-
-      {current && (
-        <>
-          <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>
-            <strong style={{ color: "#374151" }}>Subject:</strong> {current.subject}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Create Custom Template</h2>
+        <div style={{ display: "grid", gap: 16 }}>
+          <div>
+            <label style={labelStyle}>Template Name / Subject</label>
+            <input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Price Negotiation Follow-up" style={inputStyle} />
           </div>
-          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: 14, fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-wrap", color: "#111827", minHeight: 140, fontFamily: "inherit" }}>
-            {current.body}
+          <div>
+            <label style={labelStyle}>Template Body</label>
+            <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} rows={6} placeholder="Template body — use [CLIENT], [DATE], [ORDER_NO] as placeholders" style={{ ...inputStyle, resize: "vertical" }} />
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={copy} style={primaryBtn}>{copied ? "✓ Copied!" : "📋 Copy template"}</button>
+          <div>
+            <button onClick={addCustom} style={btnStyle}>+ Save Template</button>
           </div>
-        </>
-      )}
-
-      <div style={{ height: 1, background: "#E5E7EB", margin: "18px 0 12px" }} />
-      <div style={labelStyle}>Add custom template</div>
-      <input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="Template name" style={{ ...inputStyle, marginBottom: 8, marginTop: 6 }} />
-      <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} rows={4} placeholder="Template body — use [CLIENT], [DATE], [ORDER_NO] as placeholders" style={{ ...inputStyle, resize: "none" }} />
-      <div style={{ marginTop: 8 }}>
-        <button onClick={addCustom} style={btnStyle}>+ Save template</button>
+        </div>
       </div>
     </div>
   );
@@ -456,34 +429,36 @@ function AutoReplyTab() {
 
   return (
     <div>
-      <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 24 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginBottom: 6 }}>1. Define AI Rules</div>
-        <div style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.5 }}>
-          Write simple instructions below. When new emails arrive, Gemini AI will read these enabled rules and apply them automatically to incoming emails.
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>1. Define AI Routing Rules</h2>
         </div>
+        <p style={{ fontSize: 14, color: "#475569", marginBottom: 24, lineHeight: 1.6 }}>
+          Write instructions for how the AI should respond to incoming emails. When new emails arrive, Gemini AI will read these enabled rules and apply the most relevant one automatically.
+        </p>
         
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {rules.map((rule) => (
-            <div key={rule.id} style={{ background: "#fff", border: `1px solid ${rule.enabled ? '#CBD5E1' : '#E2E8F0'}`, borderRadius: 10, padding: 14, opacity: rule.enabled ? 1 : 0.6, transition: "opacity 0.2s" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+            <div key={rule.id} style={{ background: rule.enabled ? "#F8FAFC" : "#FFFFFF", border: `1px solid ${rule.enabled ? '#93C5FD' : '#E2E8F0'}`, borderRadius: 12, padding: 20, opacity: rule.enabled ? 1 : 0.6, transition: "all 0.2s ease" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
                   <Toggle checked={rule.enabled} onChange={() => toggle(rule.id)} />
                   <input 
                     type="text" 
                     value={rule.title} 
                     onChange={(e) => updateRuleTitle(rule.id, e.target.value)}
-                    style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", border: "none", outline: "none", width: "100%", background: "transparent" }} 
+                    style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", border: "none", outline: "none", width: "100%", background: "transparent" }} 
                     placeholder="E.g., Payment Inquiry"
                   />
                 </div>
-                <button onClick={() => deleteRule(rule.id)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 16 }} title="Delete rule">×</button>
+                <button onClick={() => deleteRule(rule.id)} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 20, padding: 4 }} title="Delete rule">×</button>
               </div>
-              <div style={{ paddingLeft: 46 }}>
-                <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>AI Instruction</div>
+              <div style={{ paddingLeft: 60 }}>
+                <label style={labelStyle}>AI Instruction</label>
                 <textarea 
                   value={rule.desc}
                   onChange={(e) => updateRuleDesc(rule.id, e.target.value)}
-                  style={{ width: "100%", border: "1px solid #E2E8F0", borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "#334155", outline: "none", resize: "vertical", minHeight: 50, fontFamily: "inherit", boxSizing: "border-box" }}
+                  style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
                   placeholder="If they ask about X, tell them Y..."
                 />
               </div>
@@ -491,33 +466,33 @@ function AutoReplyTab() {
           ))}
         </div>
 
-        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New Automation", desc: "", enabled: true }])} style={{ ...btnStyle, marginTop: 12, width: "100%", justifyContent: "center", borderStyle: "dashed" }}>
-          + Add another rule
+        <button onClick={() => setRules(r => [...r, { id: Date.now(), title: "New Automation", desc: "", enabled: true }])} style={{ ...btnStyle, marginTop: 16, width: "100%", justifyContent: "center", borderStyle: "dashed", padding: "14px" }}>
+          + Add New Routing Rule
         </button>
       </div>
 
-      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1E3A8A", marginBottom: 6 }}>2. Run Automations</div>
-        <div style={{ fontSize: 13, color: "#1E40AF", marginBottom: 16, lineHeight: 1.5 }}>
-          Connect your Gmail account, then click "Check Inbox". The system will read your unread emails and apply your enabled rules automatically.
-        </div>
+      <div style={{ ...cardStyle, background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1E3A8A", marginBottom: 8, margin: 0 }}>2. Execute Automations</h2>
+        <p style={{ fontSize: 14, color: "#1E40AF", marginBottom: 24, lineHeight: 1.6 }}>
+          Connect your Gmail account, then click "Check Inbox". The system will process unread emails in the background and reply using your active rules above.
+        </p>
         
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={{ ...primaryBtn, flex: 1, justifyContent: "center", padding: "10px" }} onClick={() => window.location.href = "/api/auth/google"}>
-            Connect Gmail ↗
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <button style={{ ...primaryBtn, padding: "14px 24px", fontSize: 15 }} onClick={() => window.location.href = "/api/auth/google"}>
+            Link Gmail Account ↗
           </button>
-          <button style={{ ...successBtn, flex: 1, justifyContent: "center", padding: "10px", opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
-            {isChecking ? "⏳ Checking..." : "🔄 Check Inbox Now"}
+          <button style={{ ...successBtn, padding: "14px 24px", fontSize: 15, opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
+            {isChecking ? "⏳ Processing Inbox..." : "🔄 Check Inbox Now"}
           </button>
         </div>
 
         {inboxLogs && (
-          <div style={{ marginTop: 16, background: "#fff", borderRadius: 8, padding: 14, border: `1px solid ${inboxLogs.type === 'error' ? '#FCA5A5' : '#E2E8F0'}` }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: inboxLogs.type === 'error' ? '#DC2626' : '#0F172A', marginBottom: 8 }}>
+          <div style={{ marginTop: 24, background: "#fff", borderRadius: 12, padding: 20, border: `1px solid ${inboxLogs.type === 'error' ? '#FCA5A5' : '#E2E8F0'}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: inboxLogs.type === 'error' ? '#DC2626' : '#0F172A', marginBottom: 12 }}>
               {inboxLogs.message}
             </div>
             {inboxLogs.logs && inboxLogs.logs.length > 0 && (
-              <div style={{ fontSize: 12, color: "#475569", fontFamily: "monospace", whiteSpace: "pre-wrap", background: "#F8FAFC", padding: 10, borderRadius: 6, border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: 13, color: "#475569", fontFamily: "monospace", whiteSpace: "pre-wrap", background: "#F8FAFC", padding: 16, borderRadius: 8, border: "1px solid #E2E8F0", lineHeight: 1.5 }}>
                 {inboxLogs.logs.map((log, i) => (
                   <div key={i} style={{ marginBottom: 6 }}>• {log}</div>
                 ))}
@@ -549,77 +524,130 @@ function ScheduledTab() {
 
   return (
     <div>
-      <div style={labelStyle}>Scheduled campaigns</div>
-      <div style={{ marginTop: 8, marginBottom: 16 }}>
-        {campaigns.map(c => (
-          <div key={c.id} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", background: "#fff" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{c.name}</div>
-              <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 3 }}>{c.seg} · {c.status === "sent" ? "Sent" : "Sending"} {c.date}</div>
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Scheduled Campaigns</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {campaigns.map(c => (
+            <div key={c.id} style={{ border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC" }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{c.name}</div>
+                <div style={{ fontSize: 13, color: "#64748B" }}>{c.seg} · {c.status === "sent" ? "Sent on" : "Sending at"} {c.date}</div>
+              </div>
+              <Badge status={c.status} />
             </div>
-            <Badge status={c.status} />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div style={{ height: 1, background: "#E5E7EB", marginBottom: 14 }} />
-      <div style={labelStyle}>Schedule a new campaign</div>
-      <div style={{ marginTop: 8 }}>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign name" style={{ ...inputStyle, marginBottom: 8 }} />
-        <select value={seg} onChange={e => setSeg(e.target.value)} style={{ ...inputStyle, marginBottom: 8 }}>
-          {SEGMENTS.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <input type="datetime-local" value={dt} onChange={e => setDt(e.target.value)} style={inputStyle} />
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-        <button onClick={schedule} style={primaryBtn}>📅 Schedule campaign</button>
-        {saved && <span style={{ fontSize: 13, color: "#059669" }}>✓ Campaign scheduled!</span>}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 20 }}>Schedule New Campaign</h2>
+        <div style={{ display: "grid", gap: 16 }}>
+          <div>
+            <label style={labelStyle}>Campaign Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q4 Trade Digest" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Target Segment</label>
+            <select value={seg} onChange={e => setSeg(e.target.value)} style={inputStyle}>
+              {SEGMENTS.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Send Date & Time</label>
+            <input type="datetime-local" value={dt} onChange={e => setDt(e.target.value)} style={inputStyle} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 8 }}>
+            <button onClick={schedule} style={primaryBtn}>📅 Schedule Campaign</button>
+            {saved && <span style={{ fontSize: 14, fontWeight: 500, color: "#10B981" }}>✓ Campaign scheduled successfully!</span>}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Root ──────────────────────────────────────────────────────────────────────
+// ─── Root Application Layout ───────────────────────────────────────────────────
 
 const TABS = [
-  { id: "compose",   label: "✨ AI Compose" },
-  { id: "templates", label: "📄 Templates" },
-  { id: "auto",      label: "🔁 Auto-reply" },
-  { id: "schedule",  label: "📅 Scheduled" },
+  { id: "compose",   label: "AI Compose", icon: "✨" },
+  { id: "templates", label: "Templates",  icon: "📄" },
+  { id: "auto",      label: "Auto-reply", icon: "🔁" },
+  { id: "schedule",  label: "Scheduled",  icon: "📅" },
 ];
 
 export default function App() {
   const [tab, setTab]               = useState("compose");
   const [emailsSent, setEmailsSent] = useState(0);
 
+  const activeTabDetails = TABS.find(t => t.id === tab);
+
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#fff", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div style={{ background: "#1E3A8A", padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#3B82F6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📦</div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>EkviraExportHouse</div>
-          <div style={{ fontSize: 11, color: "#93C5FD" }}>Email Automation Hub</div>
+    <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: "#F1F5F9", width: "100%", height: "100vh", display: "flex", overflow: "hidden" }}>
+      
+      {/* Sidebar */}
+      <div style={{ width: 260, background: "#0F172A", color: "#F8FAFC", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        {/* Brand */}
+        <div style={{ padding: "24px", borderBottom: "1px solid #1E293B", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.4)" }}>📦</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>EkviraExportHouse</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2, fontWeight: 500 }}>CRM & Automation</div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div style={{ padding: "24px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 12px", marginBottom: 4 }}>Menu</div>
+          {TABS.map(t => (
+            <button 
+              key={t.id} 
+              onClick={() => setTab(t.id)} 
+              style={{ 
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", 
+                border: "none", borderRadius: 10, background: tab === t.id ? "#1E293B" : "transparent", 
+                color: tab === t.id ? "#F8FAFC" : "#94A3B8", fontSize: 14, fontWeight: 600, 
+                cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left"
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{t.icon}</span> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div style={{ padding: "24px", borderTop: "1px solid #1E293B" }}>
+          <div style={{ fontSize: 12, color: "#64748B", display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }}></div>
+            Powered by Gemini AI
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", borderBottom: "1px solid #E5E7EB", background: "#F9FAFB" }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "10px 4px", border: "none", borderBottom: `2px solid ${tab === t.id ? "#2563EB" : "transparent"}`, background: "none", color: tab === t.id ? "#1D4ED8" : "#6B7280", fontSize: 12, fontWeight: tab === t.id ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Main Content Area */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        
+        {/* Header */}
+        <div style={{ background: "#FFFFFF", padding: "20px 32px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+            {activeTabDetails.label}
+          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, color: "#475569" }}>
+              SB
+            </div>
+          </div>
+        </div>
 
-      <div style={{ padding: "18px 20px" }}>
-        {tab === "compose"   && <ComposeTab emailsSent={emailsSent} setEmailsSent={setEmailsSent} />}
-        {tab === "templates" && <TemplatesTab />}
-        {tab === "auto"      && <AutoReplyTab />}
-        {tab === "schedule"  && <ScheduledTab />}
-      </div>
-
-      <div style={{ borderTop: "1px solid #F3F4F6", padding: "10px 20px", background: "#F9FAFB", fontSize: 11, color: "#9CA3AF", display: "flex", justifyContent: "space-between", marginTop: "auto" }}>
-        <span>EkviraExportHouse · Export Trade CRM</span>
-        <span>Powered by Gemini AI</span>
+        {/* Scrollable Content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "32px", scrollBehavior: "smooth" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
+            {tab === "compose"   && <ComposeTab emailsSent={emailsSent} setEmailsSent={setEmailsSent} />}
+            {tab === "templates" && <TemplatesTab />}
+            {tab === "auto"      && <AutoReplyTab />}
+            {tab === "schedule"  && <ScheduledTab />}
+          </div>
+        </div>
+        
       </div>
     </div>
   );
