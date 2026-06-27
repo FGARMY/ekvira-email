@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import * as XLSX from 'xlsx';
+import * as pdfjsLib from 'pdfjs-dist';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -817,6 +820,55 @@ function BulkSendTab() {
     setRecipientList(prev => prev ? prev + ',\n' + formatted : formatted);
   };
 
+  const handleContactFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      let extractedText = "";
+
+      if (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        extractedText = XLSX.utils.sheet_to_csv(worksheet);
+      } else if (file.name.endsWith('.pdf')) {
+        const data = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          extractedText += textContent.items.map(item => item.str).join(" ") + "\\n";
+        }
+      } else {
+        alert("Unsupported file type. Please upload CSV, Excel, or PDF.");
+        e.target.value = null;
+        return;
+      }
+
+      // Extract emails using a strong regex
+      const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+      const foundEmails = extractedText.match(emailRegex) || [];
+      const uniqueEmails = [...new Set(foundEmails)].map(e => e.trim());
+
+      if (uniqueEmails.length === 0) {
+        alert("No valid email addresses found in the file.");
+        e.target.value = null;
+        return;
+      }
+
+      const formatted = uniqueEmails.join(',\\n');
+      setRecipientList(prev => prev ? prev + ',\\n' + formatted : formatted);
+      alert(`Successfully extracted ${uniqueEmails.length} unique email addresses!`);
+
+    } catch (err) {
+      alert("Error reading file: " + err.message);
+    }
+    
+    e.target.value = null;
+  };
+
   const startBulkSend = async () => {
     if (!subject || !body) return alert("Subject and Body are required!");
     const parsed = parseRecipients(recipientList);
@@ -901,7 +953,13 @@ function BulkSendTab() {
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <label style={labelStyle}>Recipient List (Comma or Line separated)</label>
-            <button onClick={loadContactsByTag} style={{ ...btnStyle, padding: "4px 10px", fontSize: 13, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>👥 Load from Contacts</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <label style={{ ...btnStyle, padding: "4px 10px", fontSize: 13, background: "#F0FDF4", borderColor: "#BBF7D0", color: "#166534", cursor: "pointer", margin: 0 }}>
+                📂 Upload CSV/Excel/PDF
+                <input type="file" accept=".csv,.xlsx,.xls,.pdf" onChange={handleContactFileUpload} style={{ display: "none" }} />
+              </label>
+              <button onClick={loadContactsByTag} style={{ ...btnStyle, padding: "4px 10px", fontSize: 13, background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8", margin: 0 }}>👥 Load from Contacts</button>
+            </div>
           </div>
           <textarea 
             value={recipientList} 
