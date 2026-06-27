@@ -486,7 +486,7 @@ function TemplatesTab() {
 
 // ─── Auto-reply Tab ────────────────────────────────────────────────────────────
 
-function AutoReplyTab() {
+function AutoReplyTab({ autoPilot, setAutoPilot, autoPilotLogs }) {
   const getInitialRules = () => {
     const saved = localStorage.getItem('ekvira-autoreply-rules');
     if (saved) return JSON.parse(saved);
@@ -580,10 +580,34 @@ function AutoReplyTab() {
         </button>
       </div>
 
+      <div style={{ ...cardStyle, background: autoPilot ? "#F0FDF4" : "#FFFFFF", borderColor: autoPilot ? "#BBF7D0" : "#E2E8F0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: autoPilot ? "#166534" : "#0F172A", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              {autoPilot && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 10px #10B981", display: "inline-block" }}></span>}
+              2. Dashboard Auto-Pilot
+            </h2>
+          </div>
+          <Toggle checked={autoPilot} onChange={() => setAutoPilot(!autoPilot)} />
+        </div>
+        <p style={{ fontSize: 14, color: autoPilot ? "#166534" : "#475569", marginBottom: 20, lineHeight: 1.6 }}>
+          When active, the dashboard will silently check your inbox every 60 seconds and auto-reply to matching emails in the background. (Keep this browser tab open)
+        </p>
+        
+        {autoPilotLogs && autoPilotLogs.length > 0 && (
+          <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: 12, maxHeight: 150, overflowY: "auto", fontSize: 13, color: "#475569" }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, color: "#0F172A" }}>Live Activity Log</div>
+            {autoPilotLogs.map((log, i) => (
+              <div key={i} style={{ padding: "4px 0", borderBottom: "1px solid #F1F5F9" }}>{log}</div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ ...cardStyle, background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1E3A8A", marginBottom: 8, margin: 0 }}>2. Execute Automations</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1E3A8A", marginBottom: 8, margin: 0 }}>3. Manual Execution</h2>
         <p style={{ fontSize: 14, color: "#1E40AF", marginBottom: 24, lineHeight: 1.6 }}>
-          Connect your Gmail account, then click "Check Inbox". The system will process unread emails in the background and reply using your active rules above.
+          Connect your Gmail account, then click "Check Inbox". The system will process unread emails immediately and reply using your active rules above.
         </p>
         
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -1276,6 +1300,36 @@ export default function App() {
   const [tab, setTab]               = useState("compose");
   const [emailsSent, setEmailsSent] = useState(0);
 
+  const [autoPilot, setAutoPilot] = useState(() => JSON.parse(localStorage.getItem('ekvira-autopilot') || 'false'));
+  const [autoPilotLogs, setAutoPilotLogs] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem('ekvira-autopilot', JSON.stringify(autoPilot));
+    let interval;
+    if (autoPilot) {
+      interval = setInterval(async () => {
+        const rules = JSON.parse(localStorage.getItem('ekvira-autoreply-rules') || "[]");
+        const enabledRules = rules.filter(r => r.enabled).map(r => r.desc);
+        try {
+          const res = await fetch("/api/check-emails", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: enabledRules })
+          });
+          const data = await res.json();
+          if (data.processed > 0 || (data.logs && data.logs.length > 0)) {
+            const timestamp = new Date().toLocaleTimeString();
+            const newLogs = (data.logs || []).map(l => `[${timestamp}] ${l}`);
+            setAutoPilotLogs(prev => [...newLogs, ...prev].slice(0, 50));
+          }
+        } catch (e) {
+          console.error("AutoPilot Error:", e);
+        }
+      }, 60000);
+    }
+    return () => clearInterval(interval);
+  }, [autoPilot]);
+
   const activeTabDetails = TABS.find(t => t.id === tab);
 
   return (
@@ -1306,7 +1360,11 @@ export default function App() {
                 cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left"
               }}
             >
-              <span style={{ fontSize: 16 }}>{t.icon}</span> {t.label}
+              <span style={{ fontSize: 16 }}>{t.icon}</span> 
+              <span style={{ flex: 1 }}>{t.label}</span>
+              {t.id === 'auto' && autoPilot && (
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }}></span>
+              )}
             </button>
           ))}
         </div>
@@ -1343,7 +1401,7 @@ export default function App() {
             {tab === "bulk"      && <BulkSendTab />}
             {tab === "contacts"  && <ContactsTab />}
             {tab === "templates" && <TemplatesTab />}
-            {tab === "auto"      && <AutoReplyTab />}
+            {tab === "auto"      && <AutoReplyTab autoPilot={autoPilot} setAutoPilot={setAutoPilot} autoPilotLogs={autoPilotLogs} />}
             {tab === "schedule"  && <ScheduledTab />}
           </div>
         </div>
