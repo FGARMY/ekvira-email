@@ -137,9 +137,16 @@ Write ONLY the body of the response email. Do not include the subject line or an
       });
 
       const aiData = await aiResponse.json();
-      const replyBody = aiData.choices && aiData.choices[0] && aiData.choices[0].message 
-        ? aiData.choices[0].message.content 
-        : "Thank you for your email. We will get back to you shortly.";
+      let replyBody = "Thank you for your email. We will get back to you shortly.";
+      
+      if (!aiResponse.ok) {
+        console.error("Grok API Error:", aiData);
+        logs.push(`Grok AI Failed: ${aiData.error?.message || 'Unknown error'}`);
+      } else if (aiData.choices && aiData.choices[0] && aiData.choices[0].message) {
+        replyBody = aiData.choices[0].message.content;
+      } else {
+        logs.push("Grok returned unexpected data format.");
+      }
 
       // 5. Send reply via Gmail API
       const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
