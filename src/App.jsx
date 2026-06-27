@@ -176,6 +176,7 @@ const CopyBtn = ({ text }) => {
 function ComposeTab({ emailsSent, setEmailsSent }) {
   const [purpose, setPurpose]       = useState("");
   const [client, setClient]         = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes]           = useState("");
   const [tone, setTone]             = useState("Professional");
   const [loading, setLoading]       = useState(false);
@@ -184,6 +185,8 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
   const [editBody, setEditBody]     = useState("");
   const [isEditing, setIsEditing]   = useState(false);
   const [saved, setSaved]           = useState(false);
+  const [sending, setSending]       = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
 
   const parseEmail = (text) => {
     const lines = text.split("\n");
@@ -207,10 +210,10 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
       const res  = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 600, messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: "grok-beta", messages: [{ role: "user", content: prompt }] }),
       });
       const data = await res.json();
-      const text = (data.content || []).map(b => b.text || "").join("");
+      const text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
       setResult(text);
       const { subj, body } = parseEmail(text);
       setEditSubject(subj); setEditBody(body);
@@ -225,9 +228,30 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
   const saveEdit   = () => { setResult(`Subject: ${editSubject}\n\n${editBody}`); setIsEditing(false); };
   const cancelEdit = () => { const { subj, body } = parseEmail(result); setEditSubject(subj); setEditBody(body); setIsEditing(false); };
 
-  const sendViaGmail = () => {
-    const { subj, body } = parseEmail(result);
-    window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`, "_blank");
+  const sendEmail = async () => {
+    if (!clientEmail.trim()) { alert("Please enter a Client Email to send."); return; }
+    
+    setSending(true);
+    const finalSubject = isEditing ? editSubject : parseEmail(result).subj;
+    const finalBody = isEditing ? editBody : parseEmail(result).body;
+    
+    try {
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: clientEmail, subject: finalSubject, body: finalBody }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSendSuccess(true);
+        setTimeout(() => setSendSuccess(false), 3000);
+      } else {
+        alert("Failed to send: " + data.error);
+      }
+    } catch (err) {
+      alert("Error sending email: " + err.message);
+    }
+    setSending(false);
   };
 
   const fullText = isEditing ? `Subject: ${editSubject}\n\n${editBody}` : result;
@@ -246,6 +270,7 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
       {[
         { label: "Purpose", node: <select value={purpose} onChange={e => setPurpose(e.target.value)} style={inputStyle}>{PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select> },
         { label: "Client name", node: <input value={client} onChange={e => setClient(e.target.value)} placeholder="e.g. Global Traders Ltd." style={inputStyle} /> },
+        { label: "Client email", node: <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="client@example.com" style={inputStyle} /> },
         { label: "Key details / notes", node: <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="e.g. Order #EVH-2024-089, 500 kg turmeric, ETA Aug 12" style={{ ...inputStyle, resize: "none" }} /> },
         { label: "Tone", node: <select value={tone} onChange={e => setTone(e.target.value)} style={inputStyle}>{TONES.map(t => <option key={t}>{t}</option>)}</select> },
       ].map(({ label, node }) => (
@@ -259,7 +284,7 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
         <button onClick={generate} disabled={loading} style={{ ...primaryBtn, opacity: loading ? 0.7 : 1 }}>
           {loading ? "⏳ Generating…" : "✨ Generate email"}
         </button>
-        <button onClick={() => { setPurpose(""); setClient(""); setNotes(""); setResult(""); setIsEditing(false); }} style={btnStyle}>✕ Clear</button>
+        <button onClick={() => { setPurpose(""); setClient(""); setClientEmail(""); setNotes(""); setResult(""); setIsEditing(false); }} style={btnStyle}>✕ Clear</button>
       </div>
 
       {result && (
@@ -295,7 +320,9 @@ function ComposeTab({ emailsSent, setEmailsSent }) {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={sendViaGmail} style={successBtn}>📤 Send via Gmail ↗</button>
+            <button onClick={sendEmail} disabled={sending} style={{ ...successBtn, opacity: sending ? 0.7 : 1 }}>
+              {sending ? "⏳ Sending…" : sendSuccess ? "✓ Sent!" : "📤 Send Email"}
+            </button>
             <CopyBtn text={fullText} />
             <button onClick={() => setSaved(true)} style={btnStyle}>{saved ? "✓ Saved!" : "🔖 Save as template"}</button>
           </div>
@@ -497,7 +524,7 @@ export default function App() {
 
       <div style={{ borderTop: "1px solid #F3F4F6", padding: "10px 20px", background: "#F9FAFB", fontSize: 11, color: "#9CA3AF", display: "flex", justifyContent: "space-between" }}>
         <span>EkviraExportHouse · Export Trade CRM</span>
-        <span>Powered by Claude AI</span>
+        <span>Powered by Grok AI</span>
       </div>
     </div>
   );
