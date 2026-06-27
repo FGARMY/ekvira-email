@@ -20,9 +20,14 @@ export default async function handler(req, res) {
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const folder = url.searchParams.get('folder') || 'inbox';
+    const searchQuery = folder === 'sent' ? 'in:sent' : 'in:inbox';
+
     // 1. Fetch recent messages
     const listRes = await gmail.users.messages.list({
       userId: 'me',
+      q: searchQuery,
       maxResults: 25 // Fetch recent 25 emails for review
     });
 

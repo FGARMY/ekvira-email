@@ -508,6 +508,7 @@ function AutoReplyTab() {
 // ─── Inbox Tab ─────────────────────────────────────────────────────────────────
 
 function InboxTab() {
+  const [folder, setFolder] = useState('inbox');
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -519,7 +520,7 @@ function InboxTab() {
   const fetchInbox = async () => {
     setLoading(true); setError(null); setSelectedEmail(null);
     try {
-      const res = await fetch("/api/inbox");
+      const res = await fetch(`/api/inbox?folder=${folder}`);
       const data = await res.json();
       if (data.error) setError(data.error);
       else setEmails(data.emails || []);
@@ -529,7 +530,7 @@ function InboxTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchInbox(); }, []);
+  useEffect(() => { fetchInbox(); }, [folder]);
 
   const generateReply = async (email) => {
     setSelectedEmail(email); setGenerating(true); setDraft("");
@@ -564,6 +565,11 @@ Write ONLY the body of the response email. Do not include the subject line or an
     setGenerating(false);
   };
 
+  const startManualReply = (email) => {
+    setSelectedEmail(email);
+    setDraft("");
+  };
+
   const sendReply = async () => {
     setSending(true);
     const toAddress = selectedEmail.sender.match(/<([^>]+)>/) ? selectedEmail.sender.match(/<([^>]+)>/)[1] : selectedEmail.sender;
@@ -593,21 +599,21 @@ Write ONLY the body of the response email. Do not include the subject line or an
     setSending(false);
   };
 
-  if (selectedEmail && (generating || draft)) {
+  if (selectedEmail) {
     return (
       <div style={cardStyle}>
-        <button onClick={() => setSelectedEmail(null)} style={{ ...btnStyle, marginBottom: 16 }}>← Back to Inbox</button>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16 }}>Review Reply Draft</h2>
+        <button onClick={() => setSelectedEmail(null)} style={{ ...btnStyle, marginBottom: 16 }}>← Back</button>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", marginBottom: 16 }}>Draft Reply</h2>
         <div style={{ background: "#F8FAFC", padding: 16, borderRadius: 8, marginBottom: 16, border: "1px solid #E2E8F0" }}>
           <strong>Replying to:</strong> {selectedEmail.sender}<br />
           <strong>Subject:</strong> Re: {selectedEmail.subject}
         </div>
-        <label style={labelStyle}>AI Generated Draft</label>
+        <label style={labelStyle}>{generating ? "AI Generating..." : "Message Body"}</label>
         <textarea 
           value={draft} 
           onChange={e => setDraft(e.target.value)}
           style={{ ...inputStyle, minHeight: 200, resize: "vertical", marginBottom: 16 }}
-          placeholder={generating ? "Generating..." : ""}
+          placeholder={generating ? "Generating..." : "Type your reply here..."}
           disabled={generating}
         />
         <button onClick={sendReply} disabled={generating || sending} style={{ ...primaryBtn, padding: "12px 24px" }}>
@@ -620,7 +626,20 @@ Write ONLY the body of the response email. Do not include the subject line or an
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0 }}>Inbox</h2>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button 
+            onClick={() => setFolder('inbox')} 
+            style={{ ...btnStyle, background: folder === 'inbox' ? "#EFF6FF" : "transparent", border: folder === 'inbox' ? "1px solid #3B82F6" : "1px solid transparent", color: folder === 'inbox' ? "#1D4ED8" : "#64748B" }}
+          >
+            📥 Inbox
+          </button>
+          <button 
+            onClick={() => setFolder('sent')} 
+            style={{ ...btnStyle, background: folder === 'sent' ? "#EFF6FF" : "transparent", border: folder === 'sent' ? "1px solid #3B82F6" : "1px solid transparent", color: folder === 'sent' ? "#1D4ED8" : "#64748B" }}
+          >
+            📤 Sent Emails
+          </button>
+        </div>
         <button onClick={fetchInbox} style={btnStyle} disabled={loading}>{loading ? "⏳ Loading..." : "🔄 Refresh"}</button>
       </div>
       
@@ -638,7 +657,10 @@ Write ONLY the body of the response email. Do not include the subject line or an
               <div style={{ fontSize: 14, fontWeight: 500, color: "#1E293B", marginBottom: 8 }}>{email.subject}</div>
               <div style={{ fontSize: 13, color: "#64748B" }}>{email.bodySnippet}...</div>
             </div>
-            <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button onClick={() => generateReply(email)} style={successBtn}>✨ AI Reply</button>
+              <button onClick={() => startManualReply(email)} style={btnStyle}>💬 Manual Reply</button>
+            </div>
           </div>
         ))}
       </div>
