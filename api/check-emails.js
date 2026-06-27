@@ -57,7 +57,25 @@ export default async function handler(req, res) {
       const messageId = messageIdHeader ? messageIdHeader.value : '';
 
       // Skip replies from ourselves if they somehow appear in inbox unread
-      if (sender.includes('EkviraExportHouse') || sender.includes('me')) continue;
+      if (sender.includes('EkviraExportHouse') || sender.includes('me')) {
+        logs.push(`Skipped ${sender} (self)`);
+        await gmail.users.messages.modify({ userId: 'me', id: msg.id, requestBody: { removeLabelIds: ['UNREAD'] } });
+        continue;
+      }
+
+      // Safeguard: Skip automated emails, no-reply, and mailer-daemon to prevent infinite loops or useless replies
+      const lowerSender = sender.toLowerCase();
+      if (
+        lowerSender.includes('noreply') || 
+        lowerSender.includes('no-reply') || 
+        lowerSender.includes('mailer-daemon') ||
+        lowerSender.includes('donotreply') ||
+        lowerSender.includes('bounce')
+      ) {
+        logs.push(`Skipped automated/no-reply address: ${sender}`);
+        await gmail.users.messages.modify({ userId: 'me', id: msg.id, requestBody: { removeLabelIds: ['UNREAD'] } });
+        continue;
+      }
 
       let bodyText = '';
       if (payload.parts) {

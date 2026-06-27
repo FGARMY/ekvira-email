@@ -398,7 +398,32 @@ function TemplatesTab() {
 
 function AutoReplyTab() {
   const [rules, setRules] = useState(AUTO_RULES_DEFAULT);
+  const [inboxLogs, setInboxLogs] = useState(null);
+  const [isChecking, setIsChecking] = useState(false);
+
   const toggle = (id) => setRules(r => r.map(rule => rule.id === id ? { ...rule, enabled: !rule.enabled } : rule));
+
+  const checkInbox = async () => {
+    setIsChecking(true);
+    setInboxLogs(null);
+    try {
+      const res = await fetch("/api/check-emails");
+      const data = await res.json();
+      
+      if (data.error) {
+        setInboxLogs({ type: "error", message: data.error });
+      } else {
+        setInboxLogs({ 
+          type: "success", 
+          message: data.message || `Processed ${data.processed} emails.`,
+          logs: data.logs || []
+        });
+      }
+    } catch (err) {
+      setInboxLogs({ type: "error", message: "Error checking emails: " + err.message });
+    }
+    setIsChecking(false);
+  };
 
   return (
     <div>
@@ -431,21 +456,25 @@ function AutoReplyTab() {
           <button style={{ ...primaryBtn, fontSize: 12, padding: "6px 12px" }} onClick={() => window.location.href = "/api/auth/google"}>
             Connect Gmail (OAuth) ↗
           </button>
-          <button style={{ ...successBtn, fontSize: 12, padding: "6px 12px" }} onClick={async () => {
-            const btn = document.getElementById("checkInboxBtn");
-            btn.innerText = "⏳ Checking...";
-            try {
-              const res = await fetch("/api/check-emails");
-              const data = await res.json();
-              alert(data.message || `Processed ${data.processed} emails.\nLogs:\n` + (data.logs || []).join('\n'));
-            } catch (err) {
-              alert("Error checking emails: " + err.message);
-            }
-            btn.innerText = "🔄 Check Inbox Now";
-          }} id="checkInboxBtn">
-            🔄 Check Inbox Now
+          <button style={{ ...successBtn, fontSize: 12, padding: "6px 12px", opacity: isChecking ? 0.7 : 1 }} onClick={checkInbox} disabled={isChecking}>
+            {isChecking ? "⏳ Checking..." : "🔄 Check Inbox Now"}
           </button>
         </div>
+
+        {inboxLogs && (
+          <div style={{ marginTop: 14, background: "#fff", borderRadius: 8, padding: 12, border: `1px solid ${inboxLogs.type === 'error' ? '#FCA5A5' : '#D1D5DB'}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: inboxLogs.type === 'error' ? '#DC2626' : '#111827', marginBottom: 6 }}>
+              {inboxLogs.message}
+            </div>
+            {inboxLogs.logs && inboxLogs.logs.length > 0 && (
+              <div style={{ fontSize: 11, color: "#4B5563", fontFamily: "monospace", whiteSpace: "pre-wrap", background: "#F9FAFB", padding: 8, borderRadius: 6, border: "1px solid #E5E7EB" }}>
+                {inboxLogs.logs.map((log, i) => (
+                  <div key={i} style={{ marginBottom: 4 }}>• {log}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
